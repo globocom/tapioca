@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+import urllib
+
 from tornado.testing import AsyncHTTPTestCase
 
 from images_api.app import ImagesApplication
@@ -10,6 +12,9 @@ class BaseImagesAPITestCase(AsyncHTTPTestCase):
     def get_app(self):
         return ImagesApplication()
 
-    def get(self, path):
-        self.http_client.fetch(self.get_url(path), self.stop)
+    def get(self, path, **querystring):
+        url = self.get_url(path)
+        if querystring:
+            url = "%s?%s" % (url, urllib.urlencode(querystring))
+        self.http_client.fetch(url, self.stop)
         return self.wait()
