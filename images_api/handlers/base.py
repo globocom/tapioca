@@ -13,7 +13,11 @@ class BaseHandler(tornado.web.RequestHandler):
 
     def respond_with(self, data):
         self.add_header('Content-Type', 'application/json')
-        self.write(dumps(data))
+        data = dumps(data)
+        callback_name = self.get_argument('callback', default=None)
+        if callback_name:
+            data = "%s(%s)" % (callback_name, data)
+        self.write(data)
         self.finish()
 
 
