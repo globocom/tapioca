@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 
 import urllib
-
 from tornado.testing import AsyncHTTPTestCase
 
 from images_api.app import ImagesApplication
