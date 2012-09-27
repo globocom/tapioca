@@ -19,3 +19,7 @@ class BaseHandler(tornado.web.RequestHandler):
             data = "%s(%s)" % (callback_name, data)
         self.write(data)
         self.finish()
+
+    @property
+    def config(self):
+        return self.application.config
