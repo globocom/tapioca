@@ -7,9 +7,14 @@ from tornado.ioloop import IOLoop
 from tornado.testing import AsyncHTTPTestCase
 
 from images_api.app import ImagesApplication
+from tests.support import es_cleanup
 
 
 class BaseImagesAPITestCase(AsyncHTTPTestCase):
+    
+    def setUp(self):
+        super(BaseImagesAPITestCase, self).setUp()
+        es_cleanup()
     
     def get_app(self):
         return ImagesApplication(conf_file=abspath(join(dirname(__file__), '..', '..', 'images_api.test.conf')))
@@ -27,6 +32,10 @@ class BaseImagesAPITestCase(AsyncHTTPTestCase):
     
     def put(self, url, data):
         self.http_client.fetch(url, self.stop, method='PUT', body=data)
+        return self.wait()
+    
+    def delete(self, url):
+        self.http_client.fetch(url, self.stop, method='DELETE')
         return self.wait()
     
     def get_new_ioloop(self):
