@@ -4,8 +4,9 @@
 import json
 import tornado.web
 
+from images_api.handlers import BaseHandlerMixin
 
-class BaseHandler(tornado.web.RequestHandler):
+class BaseHandler(tornado.web.RequestHandler, BaseHandlerMixin):
 
     @property
     def config(self):
