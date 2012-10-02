@@ -8,7 +8,7 @@ from tornado.ioloop import IOLoop
 from tornado.testing import AsyncHTTPTestCase
 
 from images_api.app import ImagesApplication
-from images_api.alpha.infrastructure import EsUrls
+from images_api.alpha.infrastructure import ElasticSearchUrls
 
 from tests.support import es_cleanup
 
@@ -39,7 +39,7 @@ class BaseImagesAPITestCase(AsyncHTTPTestCase, AsyncHTTPClientMixin):
     
     def setUp(self):
         super(BaseImagesAPITestCase, self).setUp()
-        es_cleanup(EsUrls(self._app.config))
+        es_cleanup(ElasticSearchUrls(self._app.config))
     
     def get_app(self):
         return ImagesApplication(conf_file=abspath(join(dirname(__file__), '..', 'images_api.test.conf')))
