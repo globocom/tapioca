@@ -11,13 +11,14 @@ class BaseHandler(tornado.web.RequestHandler):
     def config(self):
         return self.application.config
 
+
 class ApiResourceHandler(BaseHandler):
 
     def encode(self, data):
         return json.dumps(data)
 
     def decode(self, data):
-        return self.loads(data)
+        return json.loads(data)
 
     # Generic API HTTP Verbs
 
@@ -71,15 +72,4 @@ class ApiResourceHandler(BaseHandler):
     def delete_model(self, *args):
         """ delete a model """
         raise tornado.web.HTTPError(404)
-
-    def loads(self, *args):
-        item = {}
-        for param_name in self.collection_fields:
-            item[param_name] = self.get_argument(param_name, None)
-        return item
-
-    @property
-    def collection_fields(self):
-        """ return a list of allowed parameters for this resource """
-        raise NotImplementedError
 
