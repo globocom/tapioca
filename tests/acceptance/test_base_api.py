@@ -9,7 +9,7 @@ from tornado.testing import AsyncHTTPTestCase
 
 from images_api.handlers import ApiResourceHandler
 
-from tests import AsyncHTTPClientMixin
+from tests.support import AsyncHTTPClientMixin
 
 
 class TestHandler(ApiResourceHandler):
@@ -41,19 +41,17 @@ class TestHandler(ApiResourceHandler):
         self.models.remove(self._find(cid))
 
 
-
 application = tornado.web.Application([
         (r"/api", TestHandler),
         (r"/api/(.+)", TestHandler),
     ]
 )
 
-class TestBaseApiHandler(AsyncHTTPTestCase, AsyncHTTPClientMixin):
 
+class TestBaseApiHandler(AsyncHTTPTestCase, AsyncHTTPClientMixin):
 
     def get_app(self):
         return application
-
 
     def test_get_request_to_list_all_resource_instances(self):
         response = self.get('/api')
@@ -65,11 +63,9 @@ class TestBaseApiHandler(AsyncHTTPTestCase, AsyncHTTPClientMixin):
             assert 'id' in item, 'should have the key \'id\' in the resource instance'
             assert 'text' in item, 'should have the \'text\' in the resource instance'
 
-
     def test_get_a_specific_resource_using_get_request(self):
         response = self.get('/api/3')
         assert response.code == 200, 'the status code should be 200 but it was %d' % request.code
         resource = loads(response.body)
         assert 'id' in resource, 'should have the key \'id\' in the resource instance %s' % str(resource)
         assert 'text' in resource, 'should have the \'text\' in the resource instance %s' % str(resource)
-
