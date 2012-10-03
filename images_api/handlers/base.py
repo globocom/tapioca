@@ -37,6 +37,7 @@ class ApiResourceHandler(BaseHandler):
     def post(self, *args):
         """ create a model """
         resp = self.create_model(self.decode(self.request.body), *args)
+        self.set_status(201)
         self.write(json.dumps(resp))
 
     def put(self, *args):

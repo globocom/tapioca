@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import logging
-from json import loads
+from json import loads, dumps
 
 import tornado.web
 from tornado.testing import AsyncHTTPTestCase
@@ -24,7 +24,7 @@ class TestHandler(ApiResourceHandler):
         model['id'] = str(max([int(x['id']) for x in self.models]) + 1)
         self.models.append(model)
         logging.debug('created %s' % str(model))
-        return dict(id = model['id'])
+        return model
 
     def get_collection(self):
         return self.models
@@ -55,7 +55,7 @@ class TestBaseApiHandler(AsyncHTTPTestCase, AsyncHTTPClientMixin):
 
     def test_get_request_to_list_all_resource_instances(self):
         response = self.get('/api')
-        assert response.code == 200, 'the status code should be 200 but it was %d' % request.code
+        assert response.code == 200, 'the status code should be 200 but it was %d' % response.code
         resources = loads(response.body)
         number_of_items = len(resources)
         assert number_of_items == 10, 'should return 10 resources but returned %d' % number_of_items
@@ -65,7 +65,18 @@ class TestBaseApiHandler(AsyncHTTPTestCase, AsyncHTTPClientMixin):
 
     def test_get_a_specific_resource_using_get_request(self):
         response = self.get('/api/3')
-        assert response.code == 200, 'the status code should be 200 but it was %d' % request.code
+        assert response.code == 200, 'the status code should be 200 but it was %d' % response.code
         resource = loads(response.body)
         assert 'id' in resource, 'should have the key \'id\' in the resource instance %s' % str(resource)
         assert 'text' in resource, 'should have the \'text\' in the resource instance %s' % str(resource)
+
+    def test_post_to_create_a_new_resource(self):
+        a_new_item = {
+            'text': 'this is my new item'
+        }
+        response = self.post(self.get_url('/api'), dumps(a_new_item))
+        assert response.code == 201, 'the status code should be 201 but it was %d' % response.code
+        resource = loads(response.body)
+        assert 'id' in resource, 'should have the key \'id\' in the resource instance %s' % str(resource)
+        assert 'text' in resource, 'should have the \'text\' in the resource instance %s' % str(resource)
+        assert resource['text'] == a_new_item['text']
