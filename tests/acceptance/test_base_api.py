@@ -7,38 +7,42 @@ from json import loads, dumps
 import tornado.web
 from tornado.testing import AsyncHTTPTestCase
 
-from images_api.handlers import ApiResourceHandler
+from images_api.handlers import ApiResourceHandler, ResourceDoesNotExist
 
 from tests.support import AsyncHTTPClientMixin
 
 
+FAKE_DATABASE = None
+
 class TestHandler(ApiResourceHandler):
 
-    models = [dict(id=str(i), text='X' * i) for i in range(10)]
-
     def _find(self, cid):
-        ms = [x for x in self.models if x['id'] == cid]
-        return ms[0] if ms else None
+        ms = [x for x in FAKE_DATABASE if x['id'] == cid]
+        if ms:
+            return ms[0]
+        else:
+            raise ResourceDoesNotExist()
 
     def create_model(self, model):
-        model['id'] = str(max([int(x['id']) for x in self.models]) + 1)
-        self.models.append(model)
+        model['id'] = str(max([int(x['id']) for x in FAKE_DATABASE]) + 1)
+        FAKE_DATABASE.append(model)
         logging.debug('created %s' % str(model))
         return model
 
     def get_collection(self):
-        return self.models
+        return FAKE_DATABASE
 
     def get_model(self, cid):
         return self._find(cid)
 
     def update_model(self, model, cid):
         logging.debug('updating %s %s' % (str(cid), str(model)))
-        self.models[self.models.index(self._find(cid))] = model
+        FAKE_DATABASE[FAKE_DATABASE.index(self._find(cid))] = model
 
     def delete_model(self, cid):
         logging.debug('deleting')
-        self.models.remove(self._find(cid))
+        item = self._find(cid)
+        FAKE_DATABASE.remove(self._find(cid))
 
 
 application = tornado.web.Application([
@@ -52,6 +56,11 @@ class TestBaseApiHandler(AsyncHTTPTestCase, AsyncHTTPClientMixin):
 
     def get_app(self):
         return application
+
+    def setUp(self, *args, **kw):
+        super(TestBaseApiHandler, self).setUp(*args, **kw)
+        global FAKE_DATABASE
+        FAKE_DATABASE = [dict(id=str(i), text='X' * i) for i in range(10)]
 
     def test_get_request_to_list_all_resource_instances(self):
         response = self.get('/api')
@@ -83,6 +92,7 @@ class TestBaseApiHandler(AsyncHTTPTestCase, AsyncHTTPClientMixin):
 
     def test_put_to_update_an_existing_resource(self):
         response = self.get('/api/1')
+        assert response.code == 200, 'the status code should be 200 but it was %d' % response.code
         resource = loads(response.body)
         resource['comment'] = 'wow!'
         response = self.put(self.get_url('/api/1'), dumps(resource))
@@ -91,3 +101,9 @@ class TestBaseApiHandler(AsyncHTTPTestCase, AsyncHTTPClientMixin):
         resource = loads(response.body)
         assert 'comment' in resource
         assert resource['comment'] == 'wow!'
+
+    def test_delete_method_to_destroy_a_resource(self):
+        response = self.delete(self.get_url('/api/1'))
+        assert response.code == 200, 'the status code should be 200 but it was %d' % response.code
+        response = self.delete(self.get_url('/api/1'))
+        assert response.code == 404, 'the status code should be 404 but it was %d' % response.code

@@ -6,6 +6,11 @@ import tornado.web
 
 from images_api.handlers import BaseHandlerMixin
 
+
+class ResourceDoesNotExist(Exception):
+    pass
+
+
 class BaseHandler(tornado.web.RequestHandler, BaseHandlerMixin):
 
     @property
@@ -28,10 +33,10 @@ class ApiResourceHandler(BaseHandler):
         if self.is_get_collection(*args):
             self.write(self.encode(self.get_collection(*args)))
         else:
-            model = self.get_model(*args)
-            if model:
+            try:
+                model = self.get_model(*args)
                 self.write(self.encode(model))
-            else:
+            except ResourceDoesNotExist:
                 raise tornado.web.HTTPError(404)
 
     def post(self, *args):
@@ -42,12 +47,18 @@ class ApiResourceHandler(BaseHandler):
 
     def put(self, *args):
         """ update a model """
-        resp = self.update_model(self.decode(self.request.body), *args)
-        self.write(json.dumps(resp))
+        try:
+            resp = self.update_model(self.decode(self.request.body), *args)
+            self.write(json.dumps(resp))
+        except ResourceDoesNotExist:
+            raise tornado.web.HTTPError(404)
 
     def delete(self, *args):
         """ delete a model """
-        self.delete_model(*args)
+        try:
+            self.delete_model(*args)
+        except ResourceDoesNotExist:
+            self.set_status(404)
 
     # Extension points
 
