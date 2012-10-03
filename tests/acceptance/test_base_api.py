@@ -45,16 +45,14 @@ class TestHandler(ApiResourceHandler):
         FAKE_DATABASE.remove(self._find(cid))
 
 
-application = tornado.web.Application([
-        (r"/api", TestHandler),
-        (r"/api/(.+)", TestHandler),
-    ]
-)
-
-
 class TestBaseApiHandler(AsyncHTTPTestCase, AsyncHTTPClientMixin):
 
     def get_app(self):
+        application = tornado.web.Application([
+                (r"/api", TestHandler),
+                (r"/api/(.+)", TestHandler),
+            ]
+        )
         return application
 
     def setUp(self, *args, **kw):
@@ -79,6 +77,10 @@ class TestBaseApiHandler(AsyncHTTPTestCase, AsyncHTTPClientMixin):
         assert 'id' in resource, 'should have the key \'id\' in the resource instance %s' % str(resource)
         assert 'text' in resource, 'should have the \'text\' in the resource instance %s' % str(resource)
 
+    def test_get_a_resource_that_does_not_exist(self):
+        response = self.get('/api/30')
+        assert response.code == 404, 'the status code should be 404 but it was %d' % response.code
+
     def test_post_to_create_a_new_resource(self):
         a_new_item = {
             'text': 'this is my new item'
@@ -102,8 +104,39 @@ class TestBaseApiHandler(AsyncHTTPTestCase, AsyncHTTPClientMixin):
         assert 'comment' in resource
         assert resource['comment'] == 'wow!'
 
+    def test_try_to_update_a_resource_that_does_not_exist(self):
+        response = self.put(self.get_url('/api/30'), dumps(dict(text='not exist')))
+        assert response.code == 404, 'the status code should be 404 but it was %d' % response.code
+
     def test_delete_method_to_destroy_a_resource(self):
         response = self.delete(self.get_url('/api/1'))
         assert response.code == 200, 'the status code should be 200 but it was %d' % response.code
+        response = self.delete(self.get_url('/api/1'))
+        assert response.code == 404, 'the status code should be 404 but it was %d' % response.code
+
+
+class TestApiResourceHandlerWithoutImplementation(AsyncHTTPTestCase, AsyncHTTPClientMixin):
+
+    def get_app(self):
+        application = tornado.web.Application([
+                (r"/api", ApiResourceHandler),
+                (r"/api/(.+)", ApiResourceHandler),
+            ]
+        )
+        return application
+
+    def test_try_to_create_a_resource(self):
+        response = self.post(self.get_url('/api'), dumps(dict(text='nice')))
+        assert response.code == 404, 'the status code should be 404 but it was %d' % response.code
+
+    def test_try_to_list_resources(self):
+        response = self.get('/api')
+        assert response.code == 404, 'the status code should be 404 but it was %d' % response.code
+
+    def test_try_to_update_a_resource(self):
+        response = self.put(self.get_url('/api/1'), dumps(dict(text='nice')))
+        assert response.code == 404, 'the status code should be 404 but it was %d' % response.code
+
+    def test_try_to_delete_a_resource(self):
         response = self.delete(self.get_url('/api/1'))
         assert response.code == 404, 'the status code should be 404 but it was %d' % response.code
