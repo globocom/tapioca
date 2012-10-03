@@ -80,3 +80,14 @@ class TestBaseApiHandler(AsyncHTTPTestCase, AsyncHTTPClientMixin):
         assert 'id' in resource, 'should have the key \'id\' in the resource instance %s' % str(resource)
         assert 'text' in resource, 'should have the \'text\' in the resource instance %s' % str(resource)
         assert resource['text'] == a_new_item['text']
+
+    def test_put_to_update_an_existing_resource(self):
+        response = self.get('/api/1')
+        resource = loads(response.body)
+        resource['comment'] = 'wow!'
+        response = self.put(self.get_url('/api/1'), dumps(resource))
+        assert response.code == 200, 'the status code should be 200 but it was %d' % response.code
+        response = self.get('/api/1')
+        resource = loads(response.body)
+        assert 'comment' in resource
+        assert resource['comment'] == 'wow!'
