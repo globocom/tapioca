@@ -21,26 +21,34 @@ class BaseHandler(tornado.web.RequestHandler, BaseHandlerMixin):
         return self.application.config
 
 
-class ApiResourceHandler(BaseHandler):
+class JsonEncoder(object):
 
-    def encode_json(self, data):
+    def encode(self, data):
         return json.dumps(data)
 
-    def decode_json(self, data):
+    def decode(self, data):
         return json.loads(data)
 
-    def get_encoders(self, data):
+
+class ApiResourceHandler(BaseHandler):
+
+    def get_encoders(self):
         return {
-            'application/json': self.encode_json
+            'application/json': JsonEncoder
         }
 
-    def respond_with(self, data):
-        content_types_accepted_by_client = self.request.headers.get(
-                'Accept', 'application/json')
-        respond_as = mimeparse.best_match(
-                self.get_encoders().keys(), content_types_accepted_by_client)
+    def respond_with(self, data, force_type=None):
+        if force_type is None:
+            content_types_accepted_by_client = self.request.headers.get(
+                    'Accept', 'application/json')
+            respond_as = mimeparse.best_match(
+                    self.get_encoders().keys(), content_types_accepted_by_client)
+        else:
+            respond_as = force_type
+
         self.set_header('Content-Type', respond_as)
-        self.write(self.get_encoders()[respond_as](data))
+        encoder_class = self.get_encoders()[respond_as]
+        self.write(encoder_class().encode(data))
 
     # Generic API HTTP Verbs
 
@@ -57,15 +65,30 @@ class ApiResourceHandler(BaseHandler):
 
     def post(self, *args):
         """ create a model """
-        resp = self.create_model(self.decode_json(self.request.body), *args)
+        content_types_accepted_by_client = self.request.headers.get('Content-Type', 'application/json')
+        if content_types_accepted_by_client == 'application/x-www-form-urlencoded':
+            content_types_accepted_by_client = 'application/json'
+        content_type = mimeparse.best_match(
+                self.get_encoders().keys(), content_types_accepted_by_client)
+        encoder_class = self.get_encoders()[content_type]
+        data = encoder_class().decode(self.request.body)
+
+        resp = self.create_model(data, *args)
         self.set_status(201)
-        self.respond_with(resp)
+        self.respond_with(resp, force_type=content_type)
 
     def put(self, *args):
         """ update a model """
+        content_types_accepted_by_client = self.request.headers.get('Content-Type', 'application/json')
+        if content_types_accepted_by_client == 'application/x-www-form-urlencoded':
+            content_types_accepted_by_client = 'application/json'
+        content_type = mimeparse.best_match(
+                self.get_encoders().keys(), content_types_accepted_by_client)
+        encoder_class = self.get_encoders()[content_type]
+        data = encoder_class().decode(self.request.body)
+
         try:
-            resp = self.update_model(self.decode_json(self.request.body), *args)
-            self.respond_with(resp)
+            self.update_model(data, *args)
         except ResourceDoesNotExist:
             raise tornado.web.HTTPError(404)
 

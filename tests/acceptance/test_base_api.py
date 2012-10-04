@@ -9,6 +9,7 @@ import tornado.web
 from tornado.testing import AsyncHTTPTestCase
 
 from images_api.handlers import ApiResourceHandler, ResourceDoesNotExist
+from images_api.handlers.base import JsonEncoder
 
 from tests.support import AsyncHTTPClientMixin
 
@@ -16,17 +17,33 @@ from tests.support import AsyncHTTPClientMixin
 FAKE_DATABASE = None
 
 
+class XmlEncoder(object):
+
+    def encode(self, resource):
+        data = '%s'
+        if type(resource) == list:
+            data = '<comments>%s</comments>'
+        return data % ('<comment id="%s">%s</comment>' % \
+                (resource['id'], resource['text']))
+
+    def decode(self, data):
+        doc = ElementTree.fromstring(data)
+        new_data = {
+            'text': doc.text
+        }
+        resource_id = doc.get('id', None)
+        if not resource_id is None:
+            new_data['id'] = resource_id
+        return new_data
+
+
 class AddMoreEncodersMixin:
 
     def get_encoders(self):
         return {
-            'text/xml': self.encode_xml,
-            'application/json': self.encode_json
+            'text/xml': XmlEncoder,
+            'application/json': JsonEncoder
         }
-
-    def encode_xml(self, resource):
-        return '<comments><comment id="%s">%s</comment></comments>' % \
-                (resource['id'], resource['text'])
 
 
 class ImplementAllRequiredMethodsInApiHandler:
@@ -147,13 +164,40 @@ class TestBaseApiHandler(AsyncHTTPTestCase, AsyncHTTPClientMixin):
         response = self._fetch(url, 'GET', headers=dict(Accept='text/xml'))
         assert response.code == 200, 'the status code should be 200 but it was %d' % response.code
         assert 'text/xml' in response.headers['Content-Type'], 'the content-type should be text/xml but it was %s' % response.headers['Content-Type']
-        assert response.body == '<comments><comment id="1">X</comment></comments>'
+        assert response.body == '<comment id="1">X</comment>'
 
     def test_choose_response_type_based_on_the_accept_header(self):
         url = self.get_url('/api/1')
-        response = self._fetch(url, 'GET', headers=dict(Accept='application/json, text/xml'))
+        response = self._fetch(url, 'GET', headers={'Accept':'application/json, text/xml'})
         assert response.code == 200, 'the status code should be 200 but it was %d' % response.code
         assert 'application/json' in response.headers['Content-Type'], 'the content-type should be application/json but it was %s' % response.headers['Content-Type']
+
+    def test_create_new_instance_of_the_resource_with_content_type_text_xml(self):
+        a_new_item ='<comment>meu comentario</comment>'
+        response = self._fetch(self.get_url('/api'), 'POST', headers={'Content-Type': 'text/xml'}, body=a_new_item)
+        assert response.code == 201, 'the status code should be 201 but it was %d' % response.code
+        assert 'text/xml' in response.headers['Content-Type'], 'the content-type should be text/xml but it was %s' % response.headers['Content-Type']
+        doc = ElementTree.fromstring(response.body)
+        assert doc.tag == 'comment', 'the tag should be "comment" but it was %s' % doc.tag
+        assert doc.text == 'meu comentario', 'the comment text should be "meu comentario" but it was %s' % doc.text
+        assert doc.get('id') == '10', 'the id should be 11 but it was %s' % doc.get('id')
+
+    def test_get_resource_with_content_type_text_xml(self):
+        response = self._fetch(self.get_url('/api/2'), 'GET', headers={'Accept': 'text/xml'})
+        assert 'text/xml' in response.headers['Content-Type'], 'the content-type should be text/xml but it was %s' % response.headers['Content-Type']
+        doc = ElementTree.fromstring(response.body)
+        assert doc.tag == 'comment', 'the tag should be "comment" but it was %s' % doc.tag
+        assert doc.text == 'XX', 'the comment text should be "XX" but it was %s' % doc.text
+
+    def test_update_new_instance_of_the_resource_with_content_type_text_xml(self):
+        an_updated_item ='<comment id="2">meu comentario</comment>'
+        response = self._fetch(self.get_url('/api/2'), 'PUT', headers={'Content-Type': 'text/xml'}, body=an_updated_item)
+        assert response.code == 200, 'the status code should be 200 but it was %d' % response.code
+        response = self._fetch(self.get_url('/api/2'), 'GET', headers={'Accept': 'text/xml'})
+        assert 'text/xml' in response.headers['Content-Type'], 'the content-type should be text/xml but it was %s' % response.headers['Content-Type']
+        doc = ElementTree.fromstring(response.body)
+        assert doc.tag == 'comment', 'the tag should be "comment" but it was %s' % doc.tag
+        assert doc.text == 'meu comentario', 'the comment text should be "meu comentario" but it was %s' % doc.text
 
 
 class TestApiResourceHandlerWithoutImplementation(AsyncHTTPTestCase, AsyncHTTPClientMixin):
