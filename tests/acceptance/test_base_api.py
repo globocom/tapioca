@@ -56,7 +56,7 @@ class ImplementAllRequiredMethodsInApiHandler:
             raise ResourceDoesNotExist()
 
     def create_model(self, model):
-        model['id'] = str(max([int(x['id']) for x in FAKE_DATABASE]) + 1)
+        model['id'] = max([int(x['id']) for x in FAKE_DATABASE]) + 1
         FAKE_DATABASE.append(model)
         logging.debug('created %s' % str(model))
         return model
@@ -65,16 +65,17 @@ class ImplementAllRequiredMethodsInApiHandler:
         return FAKE_DATABASE
 
     def get_model(self, cid):
-        return self._find(cid)
+        return self._find(int(cid))
 
     def update_model(self, model, cid):
+        model['id'] = int(cid)
         logging.debug('updating %s %s' % (str(cid), str(model)))
-        FAKE_DATABASE[FAKE_DATABASE.index(self._find(cid))] = model
+        FAKE_DATABASE[FAKE_DATABASE.index(self._find(int(cid)))] = model
 
     def delete_model(self, cid):
         logging.debug('deleting')
-        item = self._find(cid)
-        FAKE_DATABASE.remove(self._find(cid))
+        item = self._find(int(cid))
+        FAKE_DATABASE.remove(item)
 
 
 class FullTestHandler(
@@ -103,7 +104,7 @@ class TestBaseApiHandler(AsyncHTTPTestCase, AsyncHTTPClientMixin):
     def setUp(self, *args, **kw):
         super(TestBaseApiHandler, self).setUp(*args, **kw)
         global FAKE_DATABASE
-        FAKE_DATABASE = [dict(id=str(i), text='X' * i) for i in range(10)]
+        FAKE_DATABASE = [dict(id=i, text='X' * i) for i in range(10)]
 
     def test_get_request_to_list_all_resource_instances(self):
         response = self.get('/api')
@@ -132,10 +133,7 @@ class TestBaseApiHandler(AsyncHTTPTestCase, AsyncHTTPClientMixin):
         }
         response = self.post(self.get_url('/api'), dumps(a_new_item))
         assert response.code == 201, 'the status code should be 201 but it was %d' % response.code
-        resource = loads(response.body)
-        assert 'id' in resource, 'should have the key \'id\' in the resource instance %s' % str(resource)
-        assert 'text' in resource, 'should have the \'text\' in the resource instance %s' % str(resource)
-        assert resource['text'] == a_new_item['text']
+        assert 'Location' in response.headers
 
     def test_put_to_update_an_existing_resource(self):
         response = self.get('/api/1')
@@ -176,6 +174,8 @@ class TestBaseApiHandler(AsyncHTTPTestCase, AsyncHTTPClientMixin):
         a_new_item ='<comment>meu comentario</comment>'
         response = self._fetch(self.get_url('/api'), 'POST', headers={'Content-Type': 'text/xml'}, body=a_new_item)
         assert response.code == 201, 'the status code should be 201 but it was %d' % response.code
+        # gets the new instance
+        response = self._fetch(response.headers['Location'], 'GET', headers={'Accept': 'text/xml'})
         assert 'text/xml' in response.headers['Content-Type'], 'the content-type should be text/xml but it was %s' % response.headers['Content-Type']
         doc = ElementTree.fromstring(response.body)
         assert doc.tag == 'comment', 'the tag should be "comment" but it was %s' % doc.tag
@@ -193,7 +193,8 @@ class TestBaseApiHandler(AsyncHTTPTestCase, AsyncHTTPClientMixin):
         an_updated_item ='<comment id="2">meu comentario</comment>'
         response = self._fetch(self.get_url('/api/2'), 'PUT', headers={'Content-Type': 'text/xml'}, body=an_updated_item)
         assert response.code == 200, 'the status code should be 200 but it was %d' % response.code
-        response = self._fetch(self.get_url('/api/2'), 'GET', headers={'Accept': 'text/xml'})
+        # get the resource to verify if was updated
+        response = self._fetch(response.headers['Location'], 'GET', headers={'Accept': 'text/xml'})
         assert 'text/xml' in response.headers['Content-Type'], 'the content-type should be text/xml but it was %s' % response.headers['Content-Type']
         doc = ElementTree.fromstring(response.body)
         assert doc.tag == 'comment', 'the tag should be "comment" but it was %s' % doc.tag

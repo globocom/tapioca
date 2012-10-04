@@ -37,18 +37,32 @@ class ApiResourceHandler(BaseHandler):
             'application/json': JsonEncoder
         }
 
+    def get_content_type_based_on(self, header_key):
+        content_types_by_client = self.request.headers.get(
+                header_key, 'application/json')
+        if content_types_by_client == 'application/x-www-form-urlencoded':
+            content_types_by_client = 'application/json'
+        content_type = mimeparse.best_match(
+                self.get_encoders().keys(), content_types_by_client)
+        return content_type
+
+    def get_encoder_for(self, content_type):
+        encoder_class = self.get_encoders()[content_type]
+        return encoder_class()
+
     def respond_with(self, data, force_type=None):
         if force_type is None:
-            content_types_accepted_by_client = self.request.headers.get(
-                    'Accept', 'application/json')
-            respond_as = mimeparse.best_match(
-                    self.get_encoders().keys(), content_types_accepted_by_client)
+            respond_as = self.get_content_type_based_on('Accept')
         else:
             respond_as = force_type
 
         self.set_header('Content-Type', respond_as)
-        encoder_class = self.get_encoders()[respond_as]
-        self.write(encoder_class().encode(data))
+        self.write(self.get_encoder_for(respond_as).encode(data))
+
+    def load_data(self):
+        content_type = self.get_content_type_based_on('Content-Type')
+        data = self.get_encoder_for(content_type).decode(self.request.body)
+        return data
 
     # Generic API HTTP Verbs
 
@@ -65,30 +79,17 @@ class ApiResourceHandler(BaseHandler):
 
     def post(self, *args):
         """ create a model """
-        content_types_accepted_by_client = self.request.headers.get('Content-Type', 'application/json')
-        if content_types_accepted_by_client == 'application/x-www-form-urlencoded':
-            content_types_accepted_by_client = 'application/json'
-        content_type = mimeparse.best_match(
-                self.get_encoders().keys(), content_types_accepted_by_client)
-        encoder_class = self.get_encoders()[content_type]
-        data = encoder_class().decode(self.request.body)
-
-        resp = self.create_model(data, *args)
+        resource = self.create_model(self.load_data(), *args)
         self.set_status(201)
-        self.respond_with(resp, force_type=content_type)
+        self.set_header('Location', '%s://%s%s/%d' % (self.request.protocol,
+            self.request.host, self.request.path, resource['id']))
 
     def put(self, *args):
         """ update a model """
-        content_types_accepted_by_client = self.request.headers.get('Content-Type', 'application/json')
-        if content_types_accepted_by_client == 'application/x-www-form-urlencoded':
-            content_types_accepted_by_client = 'application/json'
-        content_type = mimeparse.best_match(
-                self.get_encoders().keys(), content_types_accepted_by_client)
-        encoder_class = self.get_encoders()[content_type]
-        data = encoder_class().decode(self.request.body)
-
         try:
-            self.update_model(data, *args)
+            self.update_model(self.load_data(), *args)
+            self.set_header('Location', '%s://%s%s' % (self.request.protocol,
+                self.request.host, self.request.path))
         except ResourceDoesNotExist:
             raise tornado.web.HTTPError(404)
 
