@@ -3,6 +3,7 @@
 
 import logging
 from json import loads, dumps
+from xml.etree import ElementTree
 
 import tornado.web
 from tornado.testing import AsyncHTTPTestCase
@@ -14,7 +15,21 @@ from tests.support import AsyncHTTPClientMixin
 
 FAKE_DATABASE = None
 
-class TestHandler(ApiResourceHandler):
+
+class AddMoreEncodersMixin:
+
+    def get_encoders(self):
+        return {
+            'text/xml': self.encode_xml,
+            'application/json': self.encode_json
+        }
+
+    def encode_xml(self, resource):
+        return '<comments><comment id="%s">%s</comment></comments>' % \
+                (resource['id'], resource['text'])
+
+
+class ImplementAllRequiredMethodsInApiHandler:
 
     def _find(self, cid):
         ms = [x for x in FAKE_DATABASE if x['id'] == cid]
@@ -45,12 +60,25 @@ class TestHandler(ApiResourceHandler):
         FAKE_DATABASE.remove(self._find(cid))
 
 
+class FullTestHandler(
+        ImplementAllRequiredMethodsInApiHandler,
+        AddMoreEncodersMixin,
+        ApiResourceHandler):
+    pass
+
+
+class RespondOnlyJsonResourceHandler(
+        ImplementAllRequiredMethodsInApiHandler,
+        ApiResourceHandler):
+    pass
+
+
 class TestBaseApiHandler(AsyncHTTPTestCase, AsyncHTTPClientMixin):
 
     def get_app(self):
         application = tornado.web.Application([
-                (r"/api", TestHandler),
-                (r"/api/(.+)", TestHandler),
+                (r"/api", FullTestHandler),
+                (r"/api/(.+)", FullTestHandler),
             ]
         )
         return application
@@ -113,6 +141,19 @@ class TestBaseApiHandler(AsyncHTTPTestCase, AsyncHTTPClientMixin):
         assert response.code == 200, 'the status code should be 200 but it was %d' % response.code
         response = self.delete(self.get_url('/api/1'))
         assert response.code == 404, 'the status code should be 404 but it was %d' % response.code
+
+    def test_return_resource_as_xml(self):
+        url = self.get_url('/api/1')
+        response = self._fetch(url, 'GET', headers=dict(Accept='text/xml'))
+        assert response.code == 200, 'the status code should be 200 but it was %d' % response.code
+        assert 'text/xml' in response.headers['Content-Type'], 'the content-type should be text/xml but it was %s' % response.headers['Content-Type']
+        assert response.body == '<comments><comment id="1">X</comment></comments>'
+
+    def test_choose_response_type_based_on_the_accept_header(self):
+        url = self.get_url('/api/1')
+        response = self._fetch(url, 'GET', headers=dict(Accept='application/json, text/xml'))
+        assert response.code == 200, 'the status code should be 200 but it was %d' % response.code
+        assert 'application/json' in response.headers['Content-Type'], 'the content-type should be application/json but it was %s' % response.headers['Content-Type']
 
 
 class TestApiResourceHandlerWithoutImplementation(AsyncHTTPTestCase, AsyncHTTPClientMixin):

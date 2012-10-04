@@ -2,7 +2,10 @@
 # -*- coding: utf-8 -*-
 
 import json
+import logging
+
 import tornado.web
+import mimeparse
 
 from images_api.handlers import BaseHandlerMixin
 
@@ -20,36 +23,49 @@ class BaseHandler(tornado.web.RequestHandler, BaseHandlerMixin):
 
 class ApiResourceHandler(BaseHandler):
 
-    def encode(self, data):
+    def encode_json(self, data):
         return json.dumps(data)
 
-    def decode(self, data):
+    def decode_json(self, data):
         return json.loads(data)
+
+    def get_encoders(self, data):
+        return {
+            'application/json': self.encode_json
+        }
+
+    def respond_with(self, data):
+        content_types_accepted_by_client = self.request.headers.get(
+                'Accept', 'application/json')
+        respond_as = mimeparse.best_match(
+                self.get_encoders().keys(), content_types_accepted_by_client)
+        self.set_header('Content-Type', respond_as)
+        self.write(self.get_encoders()[respond_as](data))
 
     # Generic API HTTP Verbs
 
     def get(self, *args):
         """ return the collection or a model """
         if self.is_get_collection(*args):
-            self.write(self.encode(self.get_collection(*args)))
+            self.respond_with(self.get_collection(*args))
         else:
             try:
                 model = self.get_model(*args)
-                self.write(self.encode(model))
+                self.respond_with(model)
             except ResourceDoesNotExist:
                 raise tornado.web.HTTPError(404)
 
     def post(self, *args):
         """ create a model """
-        resp = self.create_model(self.decode(self.request.body), *args)
+        resp = self.create_model(self.decode_json(self.request.body), *args)
         self.set_status(201)
-        self.write(json.dumps(resp))
+        self.respond_with(resp)
 
     def put(self, *args):
         """ update a model """
         try:
-            resp = self.update_model(self.decode(self.request.body), *args)
-            self.write(json.dumps(resp))
+            resp = self.update_model(self.decode_json(self.request.body), *args)
+            self.respond_with(resp)
         except ResourceDoesNotExist:
             raise tornado.web.HTTPError(404)
 
@@ -85,4 +101,3 @@ class ApiResourceHandler(BaseHandler):
     def delete_model(self, *args):
         """ delete a model """
         raise tornado.web.HTTPError(404)
-
