@@ -141,7 +141,7 @@ class TestBaseApiHandler(AsyncHTTPTestCase, AsyncHTTPClientMixin):
         resource = loads(response.body)
         resource['comment'] = 'wow!'
         response = self.put(self.get_url('/api/1'), dumps(resource))
-        assert response.code == 200, 'the status code should be 200 but it was %d' % response.code
+        assert response.code == 204, 'the status code should be 204 but it was %d' % response.code
         response = self.get('/api/1')
         resource = loads(response.body)
         assert 'comment' in resource
@@ -192,7 +192,7 @@ class TestBaseApiHandler(AsyncHTTPTestCase, AsyncHTTPClientMixin):
     def test_update_new_instance_of_the_resource_with_content_type_text_xml(self):
         an_updated_item ='<comment id="2">meu comentario</comment>'
         response = self._fetch(self.get_url('/api/2'), 'PUT', headers={'Content-Type': 'text/xml'}, body=an_updated_item)
-        assert response.code == 200, 'the status code should be 200 but it was %d' % response.code
+        assert response.code == 204, 'the status code should be 204 but it was %d' % response.code
         # get the resource to verify if was updated
         response = self._fetch(response.headers['Location'], 'GET', headers={'Accept': 'text/xml'})
         assert 'text/xml' in response.headers['Content-Type'], 'the content-type should be text/xml but it was %s' % response.headers['Content-Type']

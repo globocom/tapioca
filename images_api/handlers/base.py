@@ -88,6 +88,7 @@ class ApiResourceHandler(BaseHandler):
         """ update a model """
         try:
             self.update_model(self.load_data(), *args)
+            self.set_status(204)
             self.set_header('Location', '%s://%s%s' % (self.request.protocol,
                 self.request.host, self.request.path))
         except ResourceDoesNotExist:
