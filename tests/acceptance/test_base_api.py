@@ -4,12 +4,13 @@
 import logging
 from json import loads, dumps
 from xml.etree import ElementTree
+from unittest import TestCase
 
 import tornado.web
 from tornado.testing import AsyncHTTPTestCase
 
-from images_api.handlers import ApiResourceHandler, ResourceDoesNotExist
-from images_api.handlers.base import JsonEncoder
+from images_api.rest_api import ApiManager, ApiResourceHandler, \
+        ResourceDoesNotExist, JsonEncoder
 
 from tests.support import AsyncHTTPClientMixin
 
@@ -64,10 +65,10 @@ class ImplementAllRequiredMethodsInApiHandler:
     def get_collection(self):
         return FAKE_DATABASE
 
-    def get_model(self, cid):
+    def get_model(self, cid, *args):
         return self._find(int(cid))
 
-    def update_model(self, model, cid):
+    def update_model(self, model, cid, *args):
         model['id'] = int(cid)
         logging.debug('updating %s %s' % (str(cid), str(model)))
         FAKE_DATABASE[FAKE_DATABASE.index(self._find(int(cid)))] = model
@@ -91,14 +92,29 @@ class RespondOnlyJsonResourceHandler(
     pass
 
 
+class TestApiManager(TestCase):
+
+    def setUp(self):
+        self.api = ApiManager()
+
+    def test_should_be_possible_to_add_a_handler(self):
+        self.api.add_resource_handler('api', FullTestHandler)
+        assert (r'/api/?', FullTestHandler) in self.api.build_handlers()
+
+    def test_should_generate_a_path_for_access_direcly_an_instance(self):
+        self.api.add_resource_handler('comment', FullTestHandler)
+        assert (r'/comment/(.+)/?', FullTestHandler) in self.api.build_handlers()
+
+
 class TestBaseApiHandler(AsyncHTTPTestCase, AsyncHTTPClientMixin):
 
     def get_app(self):
-        application = tornado.web.Application([
-                (r"/api", FullTestHandler),
-                (r"/api/(.+)", FullTestHandler),
-            ]
-        )
+        api = ApiManager()
+        api.add_resource_handler('api', FullTestHandler)
+        #, Resource('comment', {
+            #'text': dict(name='Text', type=str, default='bla', required=False)
+        #}))
+        application = tornado.web.Application(api.build_handlers())
         return application
 
     def setUp(self, *args, **kw):
