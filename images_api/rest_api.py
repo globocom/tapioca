@@ -28,6 +28,9 @@ class ResourceDoesNotExist(Exception):
 
 class JsonEncoder(object):
 
+    def __init__(self, handler):
+        self.handler = handler
+
     def encode(self, data):
         return json.dumps(data)
 
@@ -35,25 +38,43 @@ class JsonEncoder(object):
         return json.loads(data)
 
 
+class JsonpEncoder(JsonEncoder):
+
+    def encode(self, data):
+        data = super(JsonpEncoder, self).encode(data)
+        callback_name = self.handler.get_argument('callback', default=None)
+        if callback_name:
+            data = "%s(%s);" % (callback_name, data)
+        return data
+
+
 class ApiResourceHandler(tornado.web.RequestHandler):
 
     def get_encoders(self):
         return {
-            'application/json': JsonEncoder
+            'application/json': JsonEncoder,
+            'text/javascript': JsonpEncoder
         }
 
+    def get_encoders_priority(self):
+        return ['application/json', 'text/javascript']
+
     def get_content_type_based_on(self, header_key):
+        mimetypes = list(self.get_encoders_priority())
+        mimetypes.reverse()
         content_types_by_client = self.request.headers.get(
-                header_key, 'application/json')
+                header_key, mimetypes[-1])
         if content_types_by_client == 'application/x-www-form-urlencoded':
-            content_types_by_client = 'application/json'
-        content_type = mimeparse.best_match(
-                self.get_encoders().keys(), content_types_by_client)
+            content_types_by_client = mimetypes[-1]
+        content_type = mimeparse.best_match(mimetypes, content_types_by_client)
         return content_type
 
     def get_encoder_for(self, content_type):
-        encoder_class = self.get_encoders()[content_type]
-        return encoder_class()
+        encoders = self.get_encoders()
+        if not content_type in encoders:
+            content_type = encoders.keys()[-1]
+        encoder_class = encoders[content_type]
+        return encoder_class(self)
 
     def respond_with(self, data, force_type=None):
         if force_type is None:
@@ -63,6 +84,7 @@ class ApiResourceHandler(tornado.web.RequestHandler):
 
         self.set_header('Content-Type', respond_as)
         self.write(self.get_encoder_for(respond_as).encode(data))
+        self.finish()
 
     def load_data(self):
         content_type = self.get_content_type_based_on('Content-Type')
@@ -74,7 +96,7 @@ class ApiResourceHandler(tornado.web.RequestHandler):
     def get(self, *args):
         """ return the collection or a model """
         if self.is_get_collection(*args):
-            self.respond_with(self.get_collection(*args))
+            self.get_collection(self.respond_with, *args)
         else:
             try:
                 model = self.get_model(*args)
@@ -116,7 +138,7 @@ class ApiResourceHandler(tornado.web.RequestHandler):
         """ create model and return a dictionary of updated attributes """
         raise tornado.web.HTTPError(404)
 
-    def get_collection(self, *args):
+    def get_collection(self, callback, *args):
         """ return the collection """
         raise tornado.web.HTTPError(404)
 

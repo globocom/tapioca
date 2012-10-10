@@ -20,6 +20,9 @@ FAKE_DATABASE = None
 
 class XmlEncoder(object):
 
+    def __init__(self, handler):
+        self.handler = handler
+
     def encode(self, resource):
         data = '%s'
         if type(resource) == list:
@@ -41,11 +44,14 @@ class XmlEncoder(object):
 class AddMoreEncodersMixin:
 
     def get_encoders(self):
-        return {
+        encoders = ApiResourceHandler.get_encoders(self)
+        encoders.update({
             'text/xml': XmlEncoder,
-            'application/json': JsonEncoder
-        }
+        })
+        return encoders
 
+    def get_encoders_priority(self):
+        return ApiResourceHandler.get_encoders_priority(self) + ['text/xml']
 
 class ImplementAllRequiredMethodsInApiHandler:
 
@@ -62,8 +68,8 @@ class ImplementAllRequiredMethodsInApiHandler:
         logging.debug('created %s' % str(model))
         return model
 
-    def get_collection(self):
-        return FAKE_DATABASE
+    def get_collection(self, callback):
+        callback(FAKE_DATABASE)
 
     def get_model(self, cid, *args):
         return self._find(int(cid))
@@ -215,6 +221,23 @@ class BaseApiHandlerTestCase(AsyncHTTPTestCase, AsyncHTTPClientMixin):
         doc = ElementTree.fromstring(response.body)
         assert doc.tag == 'comment', 'the tag should be "comment" but it was %s' % doc.tag
         assert doc.text == 'meu comentario', 'the comment text should be "meu comentario" but it was %s' % doc.text
+
+    def test_jsonp_response_when_accept_textjavascript(self):
+        response = self._fetch(
+            self.get_url('/api/?callback=my_callback'), 'GET', headers={
+                'Accept': 'text/javascript'
+            })
+        assert response.code == 200, \
+                'the status code should be 200 but it was %d' % response.code
+        assert response.body.startswith('my_callback(')
+
+    def test_use_the_default_encoder(self):
+        response = self._fetch(
+            self.get_url('/api/?callback=my_callback'), 'GET', headers={
+                'Accept': 'lol/cat'
+            })
+        assert response.code == 200, \
+                'the status code should be 200 but it was %d' % response.code
 
 
 class ApiResourceHandlerWithoutImplementationTestCase(AsyncHTTPTestCase, AsyncHTTPClientMixin):
