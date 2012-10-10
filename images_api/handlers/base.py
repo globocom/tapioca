@@ -3,10 +3,10 @@
 
 import tornado.web
 
-from images_api.handlers import BaseHandlerMixin
+from images_api.handlers import ExtractArgumentsMixin
 
 
-class BaseHandler(tornado.web.RequestHandler, BaseHandlerMixin):
+class BaseHandler(tornado.web.RequestHandler, ExtractArgumentsMixin):
 
     @property
     def config(self):
