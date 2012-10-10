@@ -106,7 +106,7 @@ class TestApiManager(TestCase):
         assert (r'/comment/(.+)/?', FullTestHandler) in self.api.build_handlers()
 
 
-class TestBaseApiHandler(AsyncHTTPTestCase, AsyncHTTPClientMixin):
+class BaseApiHandlerTestCase(AsyncHTTPTestCase, AsyncHTTPClientMixin):
 
     def get_app(self):
         api = ApiManager()
@@ -217,7 +217,7 @@ class TestBaseApiHandler(AsyncHTTPTestCase, AsyncHTTPClientMixin):
         assert doc.text == 'meu comentario', 'the comment text should be "meu comentario" but it was %s' % doc.text
 
 
-class TestApiResourceHandlerWithoutImplementation(AsyncHTTPTestCase, AsyncHTTPClientMixin):
+class ApiResourceHandlerWithoutImplementationTestCase(AsyncHTTPTestCase, AsyncHTTPClientMixin):
 
     def get_app(self):
         application = tornado.web.Application([
