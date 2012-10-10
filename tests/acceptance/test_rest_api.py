@@ -118,7 +118,7 @@ class BaseApiHandlerTestCase(AsyncHTTPTestCase, AsyncHTTPClientMixin):
         return application
 
     def setUp(self, *args, **kw):
-        super(TestBaseApiHandler, self).setUp(*args, **kw)
+        super(BaseApiHandlerTestCase, self).setUp(*args, **kw)
         global FAKE_DATABASE
         FAKE_DATABASE = [dict(id=i, text='X' * i) for i in range(10)]
 
