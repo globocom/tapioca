@@ -7,6 +7,8 @@ import logging
 import tornado.web
 import mimeparse
 
+SIMPLE_POST_MIMETYPE = 'application/x-www-form-urlencoded'
+
 
 class ApiManager(object):
 
@@ -27,6 +29,7 @@ class ResourceDoesNotExist(Exception):
 
 
 class JsonEncoder(object):
+    mimetype = 'application/json'
 
     def __init__(self, handler):
         self.handler = handler
@@ -39,6 +42,7 @@ class JsonEncoder(object):
 
 
 class JsonpEncoder(JsonEncoder):
+    mimetype = 'text/javascript'
 
     def encode(self, data):
         data = super(JsonpEncoder, self).encode(data)
@@ -51,29 +55,30 @@ class JsonpEncoder(JsonEncoder):
 class ApiResourceHandler(tornado.web.RequestHandler):
 
     def get_encoders(self):
-        return {
-            'application/json': JsonEncoder,
-            'text/javascript': JsonpEncoder
-        }
+        return [JsonEncoder, JsonpEncoder]
 
-    def get_encoders_priority(self):
-        return ['application/json', 'text/javascript']
+    def get_mimetypes_priority(self):
+        encoders_mimetypes = [encoder.mimetype \
+                for encoder in self.get_encoders()]
+        encoders_mimetypes.reverse()
+        return encoders_mimetypes
 
     def get_content_type_based_on(self, header_key):
-        mimetypes = list(self.get_encoders_priority())
-        mimetypes.reverse()
+        mimetypes = self.get_mimetypes_priority()
+        default_encoding = mimetypes[-1]
         content_types_by_client = self.request.headers.get(
-                header_key, mimetypes[-1])
-        if content_types_by_client == 'application/x-www-form-urlencoded':
-            content_types_by_client = mimetypes[-1]
+                header_key, default_encoding)
+        if content_types_by_client == SIMPLE_POST_MIMETYPE:
+            content_types_by_client = default_encoding
         content_type = mimeparse.best_match(mimetypes, content_types_by_client)
         return content_type
 
     def get_encoder_for(self, content_type):
         encoders = self.get_encoders()
-        if not content_type in encoders:
-            content_type = encoders.keys()[-1]
-        encoder_class = encoders[content_type]
+        encoder_class = encoders[0]
+        for encoder in encoders:
+            if content_type == encoder.mimetype:
+                encoder_class = encoder
         return encoder_class(self)
 
     def respond_with(self, data, force_type=None):

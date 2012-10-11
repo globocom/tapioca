@@ -19,6 +19,7 @@ FAKE_DATABASE = None
 
 
 class XmlEncoder(object):
+    mimetype = 'text/xml'
 
     def __init__(self, handler):
         self.handler = handler
@@ -44,14 +45,7 @@ class XmlEncoder(object):
 class AddMoreEncodersMixin:
 
     def get_encoders(self):
-        encoders = ApiResourceHandler.get_encoders(self)
-        encoders.update({
-            'text/xml': XmlEncoder,
-        })
-        return encoders
-
-    def get_encoders_priority(self):
-        return ApiResourceHandler.get_encoders_priority(self) + ['text/xml']
+        return ApiResourceHandler.get_encoders(self) + [XmlEncoder]
 
 class ImplementAllRequiredMethodsInApiHandler:
 
