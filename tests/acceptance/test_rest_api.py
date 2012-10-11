@@ -9,7 +9,7 @@ from unittest import TestCase
 import tornado.web
 from tornado.testing import AsyncHTTPTestCase
 
-from images_api.rest_api import TornadoRESTful, ApiResourceHandler, \
+from images_api.rest_api import TornadoRESTful, ResourceHandler, \
         ResourceDoesNotExist, JsonEncoder, JsonpEncoder
 
 from tests.support import AsyncHTTPClientMixin
@@ -80,13 +80,13 @@ class ImplementAllRequiredMethodsInApiHandler:
 class FullTestHandler(
         ImplementAllRequiredMethodsInApiHandler,
         AddMoreEncodersMixin,
-        ApiResourceHandler):
+        ResourceHandler):
     pass
 
 
 class RespondOnlyJsonResourceHandler(
         ImplementAllRequiredMethodsInApiHandler,
-        ApiResourceHandler):
+        ResourceHandler):
     pass
 
 
@@ -233,11 +233,11 @@ class BaseApiHandlerTestCase(AsyncHTTPTestCase, AsyncHTTPClientMixin):
                 'the status code should be 200 but it was %d' % response.code
 
 
-class ApiResourceHandlerWithoutImplementationTestCase(AsyncHTTPTestCase, AsyncHTTPClientMixin):
+class ResourceHandlerWithoutImplementationTestCase(AsyncHTTPTestCase, AsyncHTTPClientMixin):
 
     def get_app(self):
         api = TornadoRESTful()
-        api.add_resource('api', ApiResourceHandler)
+        api.add_resource('api', ResourceHandler)
         application = tornado.web.Application(api.get_url_mapping())
         return application
 

@@ -52,7 +52,7 @@ class JsonpEncoder(JsonEncoder):
         return data
 
 
-class ApiResourceHandler(tornado.web.RequestHandler):
+class ResourceHandler(tornado.web.RequestHandler):
     encoders = (JsonEncoder, JsonpEncoder,)
 
     def get_encoders(self):
