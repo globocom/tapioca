@@ -9,7 +9,7 @@ from unittest import TestCase
 import tornado.web
 from tornado.testing import AsyncHTTPTestCase
 
-from images_api.rest_api import ApiManager, ApiResourceHandler, \
+from images_api.rest_api import TornadoRESTful, ApiResourceHandler, \
         ResourceDoesNotExist, JsonEncoder, JsonpEncoder
 
 from tests.support import AsyncHTTPClientMixin
@@ -93,26 +93,27 @@ class RespondOnlyJsonResourceHandler(
 class TestApiManager(TestCase):
 
     def setUp(self):
-        self.api = ApiManager()
+        self.api = TornadoRESTful()
 
     def test_should_be_possible_to_add_a_handler(self):
-        self.api.add_resource_handler('api', FullTestHandler)
-        assert (r'/api/?', FullTestHandler) in self.api.build_handlers()
+        self.api.add_resource('api', FullTestHandler)
+        assert (r'/api/?', FullTestHandler) in self.api.get_url_mapping()
 
     def test_should_generate_a_path_for_access_direcly_an_instance(self):
-        self.api.add_resource_handler('comment', FullTestHandler)
-        assert (r'/comment/(.+)/?', FullTestHandler) in self.api.build_handlers()
+        self.api.add_resource('comment', FullTestHandler)
+        assert (r'/comment/(.+)/?', FullTestHandler) in \
+                self.api.get_url_mapping()
 
 
 class BaseApiHandlerTestCase(AsyncHTTPTestCase, AsyncHTTPClientMixin):
 
     def get_app(self):
-        api = ApiManager()
-        api.add_resource_handler('api', FullTestHandler)
+        api = TornadoRESTful()
+        api.add_resource('api', FullTestHandler)
         #, Resource('comment', {
             #'text': dict(name='Text', type=str, default='bla', required=False)
         #}))
-        application = tornado.web.Application(api.build_handlers())
+        application = tornado.web.Application(api.get_url_mapping())
         return application
 
     def setUp(self, *args, **kw):
@@ -235,11 +236,9 @@ class BaseApiHandlerTestCase(AsyncHTTPTestCase, AsyncHTTPClientMixin):
 class ApiResourceHandlerWithoutImplementationTestCase(AsyncHTTPTestCase, AsyncHTTPClientMixin):
 
     def get_app(self):
-        application = tornado.web.Application([
-                (r"/api", ApiResourceHandler),
-                (r"/api/(.+)", ApiResourceHandler),
-            ]
-        )
+        api = TornadoRESTful()
+        api.add_resource('api', ApiResourceHandler)
+        application = tornado.web.Application(api.get_url_mapping())
         return application
 
     def test_try_to_create_a_resource(self):

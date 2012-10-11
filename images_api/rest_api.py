@@ -10,17 +10,17 @@ import mimeparse
 SIMPLE_POST_MIMETYPE = 'application/x-www-form-urlencoded'
 
 
-class ApiManager(object):
+class TornadoRESTful(object):
 
     def __init__(self):
         self.handlers = []
 
-    def add_resource_handler(self, path, handler, *args, **kw):
+    def add_resource(self, path, handler, *args, **kw):
         normalized_path = path.rstrip('/').lstrip('/')
         self.handlers.append((r'/%s/?' % normalized_path, handler))
         self.handlers.append((r'/%s/(.+)/?' % normalized_path, handler))
 
-    def build_handlers(self):
+    def get_url_mapping(self):
         return self.handlers
 
 
