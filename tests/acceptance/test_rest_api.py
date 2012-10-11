@@ -91,29 +91,11 @@ class RespondOnlyJsonResourceHandler(
     pass
 
 
-class TestApiManager(TestCase):
-
-    def setUp(self):
-        self.api = TornadoRESTful()
-
-    def test_should_be_possible_to_add_a_handler(self):
-        self.api.add_resource('api', FullTestHandler)
-        assert (r'/api/?', FullTestHandler) in self.api.get_url_mapping()
-
-    def test_should_generate_a_path_for_access_direcly_an_instance(self):
-        self.api.add_resource('comment', FullTestHandler)
-        assert (r'/comment/(.+)/?', FullTestHandler) in \
-                self.api.get_url_mapping()
-
-
 class BaseApiHandlerTestCase(AsyncHTTPTestCase, AsyncHTTPClientMixin):
 
     def get_app(self):
         api = TornadoRESTful()
         api.add_resource('api', FullTestHandler)
-        #, Resource('comment', {
-            #'text': dict(name='Text', type=str, default='bla', required=False)
-        #}))
         application = tornado.web.Application(api.get_url_mapping())
         return application
 
@@ -245,7 +227,8 @@ class BaseApiHandlerTestCase(AsyncHTTPTestCase, AsyncHTTPClientMixin):
         assert '<body>' in response.body
 
 
-class ResourceHandlerWithoutImplementationTestCase(AsyncHTTPTestCase, AsyncHTTPClientMixin):
+class ResourceHandlerWithoutImplementationTestCase(AsyncHTTPTestCase,\
+        AsyncHTTPClientMixin):
 
     def get_app(self):
         api = TornadoRESTful()
