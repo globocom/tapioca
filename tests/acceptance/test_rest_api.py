@@ -10,7 +10,7 @@ import tornado.web
 from tornado.testing import AsyncHTTPTestCase
 
 from images_api.rest_api import TornadoRESTful, ResourceHandler, \
-        ResourceDoesNotExist, JsonEncoder, JsonpEncoder
+        ResourceDoesNotExist, JsonEncoder, JsonpEncoder, HtmlEncoder
 
 from tests.support import AsyncHTTPClientMixin
 
@@ -43,7 +43,8 @@ class XmlEncoder(object):
 
 
 class AddMoreEncodersMixin:
-    encoders = (JsonEncoder, JsonpEncoder, XmlEncoder,)
+    encoders = (JsonEncoder, JsonpEncoder, XmlEncoder, HtmlEncoder,)
+
 
 class ImplementAllRequiredMethodsInApiHandler:
 
@@ -231,6 +232,17 @@ class BaseApiHandlerTestCase(AsyncHTTPTestCase, AsyncHTTPClientMixin):
             })
         assert response.code == 200, \
                 'the status code should be 200 but it was %d' % response.code
+
+    def test_show_content_as_html_when_requested_by_browser(self):
+        CHROME_ACCEPT_HEADER = 'text/html,application/xhtml+xml,application/xm'\
+                               'l;q=0.9,*/*;q=0.8'
+        response = self._fetch(
+            self.get_url('/api/'), 'GET', headers={
+                'Accept': CHROME_ACCEPT_HEADER
+            })
+        assert response.code == 200, \
+                'the status code should be 200 but it was %d' % response.code
+        assert '<body>' in response.body
 
 
 class ResourceHandlerWithoutImplementationTestCase(AsyncHTTPTestCase, AsyncHTTPClientMixin):

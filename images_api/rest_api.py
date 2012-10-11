@@ -7,6 +7,7 @@ import logging
 import tornado.web
 import mimeparse
 
+
 SIMPLE_POST_MIMETYPE = 'application/x-www-form-urlencoded'
 
 
@@ -28,11 +29,14 @@ class ResourceDoesNotExist(Exception):
     pass
 
 
-class JsonEncoder(object):
-    mimetype = 'application/json'
+class Encoder(object):
 
     def __init__(self, handler):
         self.handler = handler
+
+
+class JsonEncoder(Encoder):
+    mimetype = 'application/json'
 
     def encode(self, data):
         return json.dumps(data)
@@ -52,8 +56,18 @@ class JsonpEncoder(JsonEncoder):
         return data
 
 
+class HtmlEncoder(Encoder):
+    mimetype = 'text/html'
+
+    def encode(self, data):
+        pprint_data = json.dumps(data, sort_keys=True, indent=4)
+        return self.handler.render_string(
+                'templates/rest_api/resource.html',
+                    resource_content=pprint_data)
+
+
 class ResourceHandler(tornado.web.RequestHandler):
-    encoders = (JsonEncoder, JsonpEncoder,)
+    encoders = (JsonEncoder, JsonpEncoder, HtmlEncoder,)
 
     def get_encoders(self):
         return self.encoders
