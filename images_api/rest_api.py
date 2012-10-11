@@ -19,7 +19,11 @@ class TornadoRESTful(object):
     def add_resource(self, path, handler, *args, **kw):
         normalized_path = path.rstrip('/').lstrip('/')
         self.handlers.append((r'/%s/?' % normalized_path, handler))
-        self.handlers.append((r'/%s/(.+)/?' % normalized_path, handler))
+        self.handlers.append((r'/%s\.(?P<force_return_type>\w+)'\
+                % normalized_path, handler))
+        self.handlers.append((r'/%s/(?P<key>[^.]+)\.(?P<force_return_type>\w+)'\
+                % normalized_path, handler))
+        self.handlers.append((r'/%s/(?P<key>.+)/?' % normalized_path, handler))
 
     def get_url_mapping(self):
         return self.handlers
@@ -37,6 +41,7 @@ class Encoder(object):
 
 class JsonEncoder(Encoder):
     mimetype = 'application/json'
+    extension = 'json'
 
     def encode(self, data):
         return json.dumps(data)
@@ -47,6 +52,7 @@ class JsonEncoder(Encoder):
 
 class JsonpEncoder(JsonEncoder):
     mimetype = 'text/javascript'
+    extension = 'js'
 
     def encode(self, data):
         data = super(JsonpEncoder, self).encode(data)
@@ -58,6 +64,7 @@ class JsonpEncoder(JsonEncoder):
 
 class HtmlEncoder(Encoder):
     mimetype = 'text/html'
+    extension = 'html'
 
     def encode(self, data):
         pprint_data = json.dumps(data, sort_keys=True, indent=4)
@@ -100,11 +107,17 @@ class ResourceHandler(tornado.web.RequestHandler):
         if force_type is None:
             respond_as = self.get_content_type_based_on('Accept')
         else:
-            respond_as = force_type
+            respond_as = self.get_content_type_for_extension(force_type)
 
         self.set_header('Content-Type', respond_as)
         self.write(self.get_encoder_for(respond_as).encode(data))
         self.finish()
+
+    def get_content_type_for_extension(self, extension):
+        for encoder in self.get_encoders():
+            if encoder.extension == extension:
+                return encoder.mimetype
+        raise tornado.web.HTTPError(404)
 
     def load_data(self):
         content_type = self.get_content_type_based_on('Content-Type')
@@ -113,14 +126,16 @@ class ResourceHandler(tornado.web.RequestHandler):
 
     # Generic API HTTP Verbs
 
-    def get(self, *args):
+    def get(self, key=None, force_return_type=None, *args):
         """ return the collection or a model """
-        if self.is_get_collection(*args):
-            self.get_collection(self.respond_with, *args)
+        if key is None:
+            def _callback(data):
+                self.respond_with(data, force_return_type)
+            self.get_collection(_callback, *args)
         else:
             try:
-                model = self.get_model(*args)
-                self.respond_with(model)
+                model = self.get_model(key, *args)
+                self.respond_with(model, force_return_type)
             except ResourceDoesNotExist:
                 raise tornado.web.HTTPError(404)
 
@@ -131,28 +146,24 @@ class ResourceHandler(tornado.web.RequestHandler):
         self.set_header('Location', '%s://%s%s/%d' % (self.request.protocol,
             self.request.host, self.request.path, resource['id']))
 
-    def put(self, *args):
+    def put(self, key=None, *args):
         """ update a model """
         try:
-            self.update_model(self.load_data(), *args)
+            self.update_model(self.load_data(), key, *args)
             self.set_status(204)
             self.set_header('Location', '%s://%s%s' % (self.request.protocol,
                 self.request.host, self.request.path))
         except ResourceDoesNotExist:
             raise tornado.web.HTTPError(404)
 
-    def delete(self, *args):
+    def delete(self, key=None, *args):
         """ delete a model """
         try:
-            self.delete_model(*args)
+            self.delete_model(key, *args)
         except ResourceDoesNotExist:
             self.set_status(404)
 
     # Extension points
-
-    def is_get_collection(self, *args):
-        """ return true if this get is for a collection """
-        return len(args) == 0
 
     def create_model(self, model, *args):
         """ create model and return a dictionary of updated attributes """

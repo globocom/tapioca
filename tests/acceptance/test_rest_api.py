@@ -20,6 +20,7 @@ FAKE_DATABASE = None
 
 class XmlEncoder(object):
     mimetype = 'text/xml'
+    extension = 'xml'
 
     def __init__(self, handler):
         self.handler = handler
@@ -225,6 +226,30 @@ class BaseApiHandlerTestCase(AsyncHTTPTestCase, AsyncHTTPClientMixin):
         assert response.code == 200, \
                 'the status code should be 200 but it was %d' % response.code
         assert '<body>' in response.body
+
+    def test_should_return_type_json_as_specified_in_url(self):
+        response = self.get('/api/1.json')
+        assert response.code == 200, \
+                'the status code should be 200 but it was %d' % response.code
+        data = loads(response.body)
+        assert 'id' in data
+
+    def test_should_return_type_xml_as_specified_in_url(self):
+        response = self.get('/api/1.xml')
+        assert response.code == 200, \
+                'the status code should be 200 but it was %d' % response.code
+        assert '</comment>' in response.body
+
+    def test_should_raise_404_when_extension_is_not_found(self):
+        response = self.get('/api/1.rb')
+        assert response.code == 404, \
+                'the status code should be 404 but it was %d' % response.code
+
+    def test_should_return_type_json_as_specified_in_url(self):
+        response = self.get('/api/1.js?callback=myCallbackFooBar')
+        assert response.code == 200, \
+                'the status code should be 200 but it was %d' % response.code
+        assert 'myCallbackFooBar(' in response.body
 
 
 class ResourceHandlerWithoutImplementationTestCase(AsyncHTTPTestCase,\
