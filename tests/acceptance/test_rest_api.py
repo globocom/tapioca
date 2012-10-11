@@ -10,7 +10,7 @@ import tornado.web
 from tornado.testing import AsyncHTTPTestCase
 
 from images_api.rest_api import ApiManager, ApiResourceHandler, \
-        ResourceDoesNotExist, JsonEncoder
+        ResourceDoesNotExist, JsonEncoder, JsonpEncoder
 
 from tests.support import AsyncHTTPClientMixin
 
@@ -43,9 +43,7 @@ class XmlEncoder(object):
 
 
 class AddMoreEncodersMixin:
-
-    def get_encoders(self):
-        return ApiResourceHandler.get_encoders(self) + [XmlEncoder]
+    encoders = (JsonEncoder, JsonpEncoder, XmlEncoder,)
 
 class ImplementAllRequiredMethodsInApiHandler:
 

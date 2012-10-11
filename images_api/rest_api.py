@@ -53,9 +53,10 @@ class JsonpEncoder(JsonEncoder):
 
 
 class ApiResourceHandler(tornado.web.RequestHandler):
+    encoders = (JsonEncoder, JsonpEncoder,)
 
     def get_encoders(self):
-        return [JsonEncoder, JsonpEncoder]
+        return self.encoders
 
     def get_mimetypes_priority(self):
         encoders_mimetypes = [encoder.mimetype \
