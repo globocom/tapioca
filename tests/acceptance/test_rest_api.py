@@ -9,7 +9,7 @@ from unittest import TestCase
 import tornado.web
 from tornado.testing import AsyncHTTPTestCase
 
-from images_api.rest_api import TornadoRESTful, ResourceHandler, \
+from tapioca import TornadoRESTful, ResourceHandler, \
         ResourceDoesNotExist, JsonEncoder, JsonpEncoder, HtmlEncoder
 
 from tests.support import AsyncHTTPClientMixin
