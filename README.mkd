@@ -4,6 +4,19 @@ Tapioca
 Tapioca is small and flexible micro-framework on top of Tornado to enable a
 easier way to create RESTful API's.
 
+How it works?
+------------
+
+Implement APIs using Tornado is easy and Tapioca makes it even more easy.
+Tapioca have some common behaviour to manage resources as close as possible
+to the definition of a RESTful API. Tapica have many renders to enable your
+resource be serialized in diferents formats. It provides you a
+easy way to make your API respond in a format that your API clients can better 
+understand. Doesn't matter if your API client is a machine or a human. Tapica
+gives you a automatic console interface to your API and it's ready to be used
+as the documentation and testing interface by your API clients.
+
+
 License
 -------
 
