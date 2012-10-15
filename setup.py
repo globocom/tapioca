@@ -3,7 +3,7 @@
 
 from setuptools import setup
 
-from tapioca import __version__
+__version__ = '0.1.1'
 
 
 setup(
