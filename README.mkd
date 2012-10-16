@@ -66,6 +66,10 @@ class CommentsResource(ResourceHandler):
 
 ```
 
+Now you can access your route and see it working.
+
+    $ curl -X GET http://localhost:8000/comments.yaml
+
 
 Contributing
 ------------
