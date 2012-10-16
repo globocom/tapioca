@@ -9,11 +9,11 @@ __version__ = '0.1.1'
 setup(
     name = 'tapioca',
     version = __version__,
-    description = "Tapioca is small and flexible micro-framework on top of "\
-        "Tornado to enable a easier way to create RESTful API's.",
+    description = "Tapioca is a small and flexible micro-framework on top of "\
+            "Tornado. It provides a simpler way to create RESTful API's.",
     long_description = """
-        Tapioca is small and flexible micro-framework on top of Tornado to
-        enable a easier way to create RESTful API's.
+        Tapioca is a small and flexible micro-framework on top of Tornado.
+        It provides a simpler way to create RESTful API's.
     """,
     keywords = 'restful rest api tornado',
     author = 'globo.com',
