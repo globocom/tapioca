@@ -1,0 +1,2 @@
+include tapioca/templates/*.html
+include tapioca/templates/tapioca/*.html

@@ -69,7 +69,7 @@ class HtmlEncoder(Encoder):
     def encode(self, data):
         pprint_data = json.dumps(data, sort_keys=True, indent=4)
         return self.handler.render_string(
-                'templates/rest_api/resource.html',
+                'templates/tapioca/resource.html',
                     resource_content=pprint_data)
 
 

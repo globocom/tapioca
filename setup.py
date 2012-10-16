@@ -1,9 +1,10 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
+from glob import glob
 from setuptools import setup
 
-__version__ = '0.1.1'
+__version__ = '0.1.9'
 
 
 setup(
@@ -31,9 +32,7 @@ setup(
     packages = ['tapioca'],
     package_dir = {"tapioca": "tapioca"},
     include_package_data = True,
-    package_data = {
-      '': ['*.html'],
-    },
+    data_files = [('templates', glob('tapioca/templates/*'))],
     install_requires=[
       "tornado>=2.4",
       "mimeparse>=0.1.3"

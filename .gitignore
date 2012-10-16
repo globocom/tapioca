@@ -6,3 +6,4 @@ build
 .venvs/
 *.egg-info/
 dist/
+MANIFEST
