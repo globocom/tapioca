@@ -74,7 +74,11 @@ Now you can access your route and see it working.
 Contributing
 ------------
 
-...
+To contribute to the Tapioca you can just [fork the project](https://github.com/globocom/tapioca/fork_select), do all the changes
+you want and then send us a pull request. It's important to make consistents pull
+request's sending every new feature in a separated pull request in order to give us
+the possibility to review every change you suggested, comment it and accept feature
+by feature. We are open to suggestions and to discuss all your ideas.
 
 
 License
