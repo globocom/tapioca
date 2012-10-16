@@ -50,9 +50,9 @@ class YamlEncoder(Encoder):
 
 ```
 
-After your new render is ready you need to enable it in all resources you want
-to respond using yaml format. To do it is only necessary to plus it the
-`encoders` attribute in your `ResourceHandler`.
+After that your new render is ready to be used. To enable it in all resources
+you want to respond using yaml format you have to plus it the
+`encoders` attribute in your `ResourceHandler`s.
 
 
 ```python
