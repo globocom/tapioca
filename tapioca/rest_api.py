@@ -53,13 +53,18 @@ class JsonEncoder(Encoder):
 class JsonpEncoder(JsonEncoder):
     mimetype = 'text/javascript'
     extension = 'js'
+    default_callback_name = 'defaultCallback'
 
     def encode(self, data):
         data = super(JsonpEncoder, self).encode(data)
-        callback_name = self.handler.get_argument('callback', default=None)
-        if callback_name:
-            data = "%s(%s);" % (callback_name, data)
-        return data
+        callback_name = self.get_callback_name()
+        return "%s(%s);" % (callback_name, data)
+
+    def get_callback_name(self):
+        callback_name = self.default_callback_name
+        if hasattr(self.handler, 'default_callback_name'):
+            callback_name = self.handler.default_callback_name
+        return self.handler.get_argument('callback', default=callback_name)
 
 
 class HtmlEncoder(Encoder):

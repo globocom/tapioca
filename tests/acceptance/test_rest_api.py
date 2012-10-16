@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+import re
 import logging
 from json import loads, dumps
 from xml.etree import ElementTree
@@ -250,6 +251,47 @@ class BaseApiHandlerTestCase(AsyncHTTPTestCase, AsyncHTTPClientMixin):
         assert response.code == 200, \
                 'the status code should be 200 but it was %d' % response.code
         assert 'myCallbackFooBar(' in response.body
+
+    def test_should_return_the_default_callback_when_i_not_specify_in_my_request(self):
+        response = self.get('/api/1.js')
+        assert response.code == 200, \
+                'the status code should be 200 but it was %d' % response.code
+        assert re.match(r'^[\w_]+\(.*', response.body), response.body
+
+    def test_should_return_the_default_callback_when_i_not_specify_in_my_request(self):
+        response = self.get('/api/1.js')
+        assert response.code == 200, \
+                'the status code should be 200 but it was %d' % response.code
+        assert re.match(r'^defaultCallback\(.*', response.body), response.body
+
+
+class WithDefaultCallbackHandler(ResourceHandler):
+    default_callback_name = 'thePersonalizedCallback'
+
+    def get_model(self, cid, *args):
+        return {}
+
+
+class JsonEncoderDefineAnDefaultCallbackTestCase(AsyncHTTPTestCase,\
+        AsyncHTTPClientMixin):
+
+    def get_app(self):
+        api = TornadoRESTful()
+        api.add_resource('api', WithDefaultCallbackHandler)
+        application = tornado.web.Application(api.get_url_mapping())
+        return application
+
+    def test_should_return_the_default_callback_when_i_not_specify_in_my_request(self):
+        response = self.get('/api/1.js')
+        assert response.code == 200, \
+                'the status code should be 200 but it was %d' % response.code
+        assert re.match(r'^thePersonalizedCallback\(.*', response.body), response.body
+
+    def test_should_return_with_the_callback_name_i_choose(self):
+        response = self.get('/api/1.js?callback=fooBar')
+        assert response.code == 200, \
+                'the status code should be 200 but it was %d' % response.code
+        assert 'fooBar(' in response.body
 
 
 class ResourceHandlerWithoutImplementationTestCase(AsyncHTTPTestCase,\
