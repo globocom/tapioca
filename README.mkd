@@ -51,7 +51,7 @@ class YamlEncoder(Encoder):
 ```
 
 After that your new render is ready to be used. To enable it in all resources
-you want to respond using yaml format you have to plus it the
+which you want to respond using yaml format you have to plus it the
 `encoders` attribute in your `ResourceHandler`s.
 
 
