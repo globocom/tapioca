@@ -1,21 +1,25 @@
 Tapioca
 =======
 
-Tapioca is small and flexible micro-framework on top of Tornado to enable a
-easier way to create RESTful API's.
+Tapioca is a small and flexible micro-framework on top of Tornado.
+It provides a simpler way to create RESTful API's.
 
 Why Tapioca?
 -----------
 
-Create APIs using Tornado is easy and Tapioca makes it even more easy.
-Tapioca have some common behaviour to manage resources as close as possible
-to the definition of a RESTful API. Tapica have many renders to enable your
-resource be serialized in differents formats. It provides you a
-easy way to make your API respond in a format that your API clients can better 
-understand. Doesn't matter if your API client is a machine or a human. Tapica
-gives you a automatic console interface to your API and it's ready to be used
-as the documentation and testing interface by your API clients.
+Create APIs using Tornado is easy, but Tapioca makes it even easier.
+Tapioca provides common behaviour to manage resources as close as possible
+to the definition of your RESTful API. 
 
+Tapioca also provides many different encoders enabling your resource 
+to be easily serialized in different formats. 
+
+It´s incredibly easy to respond in a format that your API clients can understand. 
+
+Doesn't matter if they are a machine or a human being. 
+
+Tapioca gives you an automatic console interface to your API. This way it can be used
+as both the documentation and testing interface by your API clients.
 
 Usage
 -----
@@ -25,12 +29,15 @@ Usage
 Extending
 ---------
 
-You can easily make your API speak a new "language". To implement your own render
-all you need to do is create a python class that should extends the
-`tapioca.Encoder`, override the both methods `encode` and `decode`, then provide
-some metadata about your new encoder by giving the `mimetype` that it will
-handle and the `extension` that represents it. There is a example of an render
-to enable responses as a yaml data.
+You can easily make your API speak a new "language". 
+
+Implementing your own encoder can be achieved in a few steps:
+
+* Create a python class that inherits from `tapioca.Encoder`;
+* Override both `encode` and `decode` methods;
+* Provide some metadata about your new encoder by specifying its `mimetype` and `extension`. 
+
+Below is a example of an encoder that enables responses as yaml data.
 
 ```python
 
@@ -50,9 +57,8 @@ class YamlEncoder(Encoder):
 
 ```
 
-After that your new render is ready to be used. To enable it in all resources
-which you want to respond using yaml format you have to plus it the
-`encoders` attribute in your `ResourceHandler`s.
+Using this encoder in your resources is as easy as including it in the
+`encoders` attribute in the respective `ResourceHandler`s.
 
 
 ```python
@@ -66,7 +72,7 @@ class CommentsResource(ResourceHandler):
 
 ```
 
-Now you can access your route and see it working.
+Now you can access your route and see it working:
 
     $ curl -X GET http://localhost:8000/comments.yaml
 
@@ -74,11 +80,11 @@ Now you can access your route and see it working.
 Contributing
 ------------
 
-To contribute to the Tapioca you can just [fork the project](https://github.com/globocom/tapioca/fork_select), do all the changes
-you want and then send us a pull request. It's important to make consistents pull
-request's sending every new feature in a separated pull request in order to give us
-the possibility to review every change you suggested, comment it and accept feature
-by feature. We are open to suggestions and to discuss all your ideas.
+To contribute with the Tapioca you can just [fork the project](https://github.com/globocom/tapioca/fork_select), 
+implement all the changes you need and then send us a pull request. 
+It's important to make consistents pull request's. This means that every new feature should be in a separated 
+pull request, in order to give us the possibility to review them separately (comments and feedback as well).
+We are open to suggestions and to discuss all your ideas.
 
 
 License
