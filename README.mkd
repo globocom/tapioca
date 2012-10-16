@@ -17,6 +17,62 @@ gives you a automatic console interface to your API and it's ready to be used
 as the documentation and testing interface by your API clients.
 
 
+Usage
+-----
+
+...
+
+Extending
+---------
+
+You can easily make your API speak a new "language". To implement your own render
+all you need to do is create a python class that should extends the
+`tapioca.Encoder`, override the both methods `encode` and `decode`, then provide
+some metadata about your new encoder by giving the `mimetype` that it will
+handle and the `extension` that represents it. There is a example of an render
+to enable responses as a yaml data.
+
+```python
+
+import yaml
+
+from tapioca import Encoder
+
+class YamlEncoder(Encoder):
+    mimetype = 'text/yaml'
+    extension = 'yaml'
+
+    def encode(self, data):
+        return yaml.dump(data)
+
+    def decode(self, data):
+        return yaml.load(data)
+
+```
+
+After your new render is ready you need to enable it in all resources you want
+to respond using yaml format. To do it is only necessary to plus it the
+`encoders` attribute in your `ResourceHandler`.
+
+
+```python
+
+from tapioca import ResourceHandler
+
+class CommentsResource(ResourceHandler):
+    encoders = ResourceHandler.encoders + (YamlEncoder,)
+
+    # ...
+
+```
+
+
+Contributing
+------------
+
+...
+
+
 License
 -------
 
