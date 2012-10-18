@@ -7,8 +7,6 @@ import logging
 import tornado.web
 import mimeparse
 
-from tapioca import types
-
 
 SIMPLE_POST_MIMETYPE = 'application/x-www-form-urlencoded'
 
