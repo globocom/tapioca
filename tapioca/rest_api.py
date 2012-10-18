@@ -7,7 +7,7 @@ import logging
 import tornado.web
 import mimeparse
 
-from tapioca.spec import APISpecification, Path, Method
+from tapioca.spec import APISpecification, Path, Method, Param
 
 
 SIMPLE_POST_MIMETYPE = 'application/x-www-form-urlencoded'
@@ -38,14 +38,20 @@ class TornadoRESTful(object):
             self.api_spec.add_path(
                     Path('/%s' % path, methods=basic_methods))
             self.api_spec.add_path(
-                    Path('/%s.{type}' % path, methods=basic_methods))
+                    Path('/%s.{type}' % path,
+                        params=[Param('type')],
+                        methods=basic_methods))
 
         instance_methods = self.get_instance_methods(handler)
         if len(instance_methods) > 0:
             self.api_spec.add_path(
-                    Path('/%s/{key}' % path, methods=instance_methods))
+                    Path('/%s/{key}' % path,
+                        params=[Param('key')],
+                        methods=instance_methods))
             self.api_spec.add_path(
-                    Path('/%s/{key}.{type}' % path, methods=instance_methods))
+                    Path('/%s/{key}.{type}' % path,
+                        params=[Param('key'), Param('type')],
+                        methods=instance_methods))
 
     def get_basic_methods(self, handler):
         basic_methods = []

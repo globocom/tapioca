@@ -46,16 +46,16 @@ class ResourceWithDocumentation(ResourceHandler):
 class ExtractInfoFromAPITestCase(TestCase):
 
     def test_basic_info_about_api(self):
-        self.api = TornadoRESTful(
+        api = TornadoRESTful(
                 version='v1', base_url='http://api.images.globo.com')
-        my_api = self.api.get_spec()
+        my_api = api.get_spec()
         assert isinstance(my_api, APISpecification)
         assert my_api.version == 'v1'
         assert my_api.base_url == 'http://api.images.globo.com'
         assert my_api.complete_url == 'http://api.images.globo.com/v1'
         assert my_api.paths == []
 
-    def test_basic_resource_mapping(self):
+    def test_complete_resource_mapping(self):
         self.api = TornadoRESTful(
                 version='v1', base_url='http://api.images.globo.com')
         self.api.add_resource('comments', ResourceWithDocumentation)
@@ -65,13 +65,20 @@ class ExtractInfoFromAPITestCase(TestCase):
         assert my_api.paths[0].methods[0].name == 'GET'
         assert my_api.paths[0].methods[1].name == 'POST'
         assert my_api.paths[1].name == '/comments.{type}'
+        assert len(my_api.paths[1].params) == 1
+        assert my_api.paths[1].params[0].name == 'type'
         assert my_api.paths[1].methods[0].name == 'GET'
         assert my_api.paths[1].methods[1].name == 'POST'
         assert my_api.paths[2].name == '/comments/{key}'
+        assert len(my_api.paths[2].params) == 1
+        assert my_api.paths[2].params[0].name == 'key'
         assert my_api.paths[2].methods[0].name == 'GET'
         assert my_api.paths[2].methods[1].name == 'PUT'
         assert my_api.paths[2].methods[2].name == 'DELETE'
         assert my_api.paths[3].name == '/comments/{key}.{type}'
+        assert len(my_api.paths[3].params) == 2
+        assert my_api.paths[3].params[0].name == 'key'
+        assert my_api.paths[3].params[1].name == 'type'
         assert my_api.paths[3].methods[0].name == 'GET'
         assert my_api.paths[3].methods[1].name == 'PUT'
         assert my_api.paths[3].methods[2].name == 'DELETE'
