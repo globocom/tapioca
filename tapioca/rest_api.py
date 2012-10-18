@@ -7,17 +7,26 @@ import logging
 import tornado.web
 import mimeparse
 
+from tapioca import types
+
 
 SIMPLE_POST_MIMETYPE = 'application/x-www-form-urlencoded'
 
 
 class TornadoRESTful(object):
 
-    def __init__(self):
+    def __init__(self, version=None, base_url=None):
+        self.version = version
+        self.base_url = base_url
         self.handlers = []
+        self.resources_information = None
 
     def add_resource(self, path, handler, *args, **kw):
         normalized_path = path.rstrip('/').lstrip('/')
+        self.add_url_mapping(normalized_path, handler)
+        self.add_metadata_about_resource(normalized_path, handler)
+
+    def add_url_mapping(self, normalized_path, handler):
         self.handlers.append((r'/%s/?' % normalized_path, handler))
         self.handlers.append((r'/%s\.(?P<force_return_type>\w+)'\
                 % normalized_path, handler))
@@ -25,9 +34,14 @@ class TornadoRESTful(object):
                 % normalized_path, handler))
         self.handlers.append((r'/%s/(?P<key>.+)/?' % normalized_path, handler))
 
+    def add_metadata_about_resource(self, path, handler):
+        pass
+
     def get_url_mapping(self):
         return self.handlers
 
+    def get_resources(self):
+        return self.resources_information
 
 class ResourceDoesNotExist(Exception):
     pass
