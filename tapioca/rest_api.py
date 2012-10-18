@@ -7,6 +7,8 @@ import logging
 import tornado.web
 import mimeparse
 
+from tapioca.spec import APISpecification, Path, Method
+
 
 SIMPLE_POST_MIMETYPE = 'application/x-www-form-urlencoded'
 
@@ -14,10 +16,8 @@ SIMPLE_POST_MIMETYPE = 'application/x-www-form-urlencoded'
 class TornadoRESTful(object):
 
     def __init__(self, version=None, base_url=None):
-        self.version = version
-        self.base_url = base_url
+        self.api_spec = APISpecification(version=version, base_url=base_url)
         self.handlers = []
-        self.resources_information = None
 
     def add_resource(self, path, handler, *args, **kw):
         normalized_path = path.rstrip('/').lstrip('/')
@@ -33,16 +33,55 @@ class TornadoRESTful(object):
         self.handlers.append((r'/%s/(?P<key>.+)/?' % normalized_path, handler))
 
     def add_metadata_about_resource(self, path, handler):
-        pass
+        basic_methods = self.get_basic_methods(handler)
+        if len(basic_methods) > 0:
+            self.api_spec.add_path(
+                    Path('/%s' % path, methods=basic_methods))
+            self.api_spec.add_path(
+                    Path('/%s.{type}' % path, methods=basic_methods))
+
+        instance_methods = self.get_instance_methods(handler)
+        if len(instance_methods) > 0:
+            self.api_spec.add_path(
+                    Path('/%s/{key}' % path, methods=instance_methods))
+            self.api_spec.add_path(
+                    Path('/%s/{key}.{type}' % path, methods=instance_methods))
+
+    def get_basic_methods(self, handler):
+        basic_methods = []
+        if self.is_overridden(handler.get_collection):
+            basic_methods.append(Method('GET'))
+        if self.is_overridden(handler.create_model):
+            basic_methods.append(Method('POST'))
+        return basic_methods
+
+    def is_overridden(self, method):
+        return not hasattr(method, 'original')
+
+    def get_instance_methods(self, handler):
+        instance_modification_methods = []
+        if self.is_overridden(handler.get_model):
+            instance_modification_methods.append(Method('GET'))
+        if self.is_overridden(handler.update_model):
+            instance_modification_methods.append(Method('PUT'))
+        if self.is_overridden(handler.delete_model):
+            instance_modification_methods.append(Method('DELETE'))
+        return instance_modification_methods
 
     def get_url_mapping(self):
         return self.handlers
 
-    def get_resources(self):
-        return self.resources_information
+    def get_spec(self):
+        return self.api_spec
+
 
 class ResourceDoesNotExist(Exception):
     pass
+
+
+def mark_as_original_method(method):
+    method.original = True
+    return method
 
 
 class Encoder(object):
@@ -181,23 +220,27 @@ class ResourceHandler(tornado.web.RequestHandler):
             self.set_status(404)
 
     # Extension points
-
+    @mark_as_original_method
     def create_model(self, model, *args):
         """ create model and return a dictionary of updated attributes """
         raise tornado.web.HTTPError(404)
 
+    @mark_as_original_method
     def get_collection(self, callback, *args):
         """ return the collection """
         raise tornado.web.HTTPError(404)
 
+    @mark_as_original_method
     def get_model(self, *args):
         """ return a model, return None to indicate not found """
         raise tornado.web.HTTPError(404)
 
+    @mark_as_original_method
     def update_model(self, model, *args):
         """ update a model """
         raise tornado.web.HTTPError(404)
 
+    @mark_as_original_method
     def delete_model(self, *args):
         """ delete a model """
         raise tornado.web.HTTPError(404)
