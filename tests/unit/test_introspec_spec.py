@@ -148,7 +148,7 @@ class ExtractInfoFromAPITestCase(TestCase):
         assert len(my_api.paths[1].methods) == 1
         assert my_api.paths[1].methods[0].name == 'PUT'
 
-    def test_spec_that_only_impl_update_model(self):
+    def test_spec_that_only_impl_delete_model(self):
 
         class HalfImplementedResource(ResourceHandler):
             def delete_model(self, *args, **kwargs):
