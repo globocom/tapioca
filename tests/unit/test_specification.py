@@ -15,10 +15,10 @@ class SpecificationTestCase(TestCase):
         assert spec.complete_url == 'http://api.glb.com/v1'
 
     def test_create_path(self):
-        path = Path('/comments', params=None, methods=None)
+        path = Path('/comments')
         assert path.name == '/comments'
-        assert path.params == None
-        assert path.methods == None
+        assert path.params == []
+        assert path.methods == []
         assert path.description == None
 
     def test_create_param(self):
@@ -43,9 +43,9 @@ class SpecificationTestCase(TestCase):
     def test_param_defaults(self):
         param = Param('foobar')
         assert param.name == 'foobar'
-        assert param.required == False
+        assert param.required == True
         assert param.default_value == None
-        assert param.options == None
+        assert param.options == []
         assert param.description == None
 
     def test_possible_add_a_path(self):
@@ -59,7 +59,7 @@ class SpecificationTestCase(TestCase):
         api = APISpecification(version='', base_url='')
         api.add_path(Path('/comments.{key}',
             params=[
-                Param('key', default_value='json', required=True, options=[
+                Param('key', default_value='json', required=False, options=[
                     'json',
                     'js',
                     'xml'
@@ -79,7 +79,7 @@ class SpecificationTestCase(TestCase):
         assert api.paths[0].name == '/comments.{key}'
         assert api.paths[0].params[0].name == 'key'
         assert api.paths[0].params[0].default_value == 'json'
-        assert api.paths[0].params[0].required == True
+        assert api.paths[0].params[0].required == False
         assert api.paths[0].params[0].options == ['json', 'js', 'xml']
         assert api.paths[0].methods[0].name == 'GET'
         assert api.paths[0].methods[1].name == 'POST'
