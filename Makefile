@@ -8,7 +8,7 @@ help:
 	@echo " test ..................... Run all tests."
 
 test:
-	@nosetests tests/
+	@nosetests --with-coverage  --cover-package tapioca tests/
 
 setup:
 	@pip install -r requirements.txt
