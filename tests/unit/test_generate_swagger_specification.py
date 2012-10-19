@@ -63,12 +63,16 @@ class SwaggerGenerationTestCase(TestCase):
             paths=[
                 Path('/dogs', methods=[
                     Method('PUT')])]))
-        result = self.apply_generation(api, 'dogs')
-        assert result['resourcePath'] == '/dogs'
-        assert result['apis'][0]['path'] == '/dogs'
+        api.add_resource(Resource('cats',
+            paths=[
+                Path('/cats', methods=[
+                    Method('PUT')])]))
+        result = self.apply_generation(api, 'cats')
+        assert result['resourcePath'] == '/cats'
+        assert result['apis'][0]['path'] == '/cats'
         operation = result['apis'][0]['operations'][0]
         assert operation['httpMethod'] == 'PUT'
-        assert operation['nickname'] == 'put_dogs'
+        assert operation['nickname'] == 'put_cats'
 
     def test_gen_spec_with_params(self):
         api = APISpecification(version='v1', base_url='http://api.globo.com')
