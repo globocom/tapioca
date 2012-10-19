@@ -32,7 +32,7 @@ class SwaggerGenerationTestCase(TestCase):
                 ]))
         result = self.apply_generation(api)
         assert len(result['apis']) == 1
-        assert result['apis'][0]['path'] == '/swagger/comments'
+        assert result['apis'][0]['path'] == '/discovery/comments.swagger'
         assert result['apis'][0]['description'] == ''
 
     def test_gen_spec_for_a_resource(self):

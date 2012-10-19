@@ -99,7 +99,7 @@ class SwaggerSpecification(SimpleVisitor):
 
     def visit_resource(self, node):
         return {
-            'path': '/swagger/%s' % node.name,
+            'path': '/discovery/%s.swagger' % node.name,
             'description': ''
         }
 

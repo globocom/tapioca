@@ -7,7 +7,8 @@ import logging
 import tornado.web
 import mimeparse
 
-from tapioca.spec import APISpecification, Resource, Path, Method, Param
+from tapioca.spec import APISpecification, Resource, Path, Method, Param, \
+                SwaggerSpecification
 
 
 SIMPLE_POST_MIMETYPE = 'application/x-www-form-urlencoded'
@@ -65,9 +66,10 @@ class Metadata(object):
 
 class TornadoRESTful(object):
 
-    def __init__(self, version=None, base_url=None):
+    def __init__(self, version=None, base_url=None, discovery=False):
         self.metadata = Metadata(version=version, base_url=base_url)
         self.handlers = []
+        self.discovery = discovery
 
     def add_resource(self, path, handler, *args, **kw):
         normalized_path = path.rstrip('/').lstrip('/')
@@ -83,7 +85,15 @@ class TornadoRESTful(object):
         self.handlers.append((r'/%s/(?P<key>.+)/?' % normalized_path, handler))
 
     def get_url_mapping(self):
-        return self.handlers
+        url_mapping = self.handlers
+        if self.discovery:
+            url_mapping = url_mapping + [
+            (r'/discovery\.(?P<force_return_type>\w+)',
+                DiscoveryHandler, {'api_spec': self.metadata.spec}),
+            (r'/discovery/(?P<resource_name>[\w_/]+)\.(?P<force_return_type>\w+)',
+                DiscoveryHandler, {'api_spec': self.metadata.spec})
+            ]
+        return url_mapping
 
     def get_spec(self):
         return self.metadata.spec
@@ -196,30 +206,30 @@ class ResourceHandler(tornado.web.RequestHandler):
 
     # Generic API HTTP Verbs
 
-    def get(self, key=None, force_return_type=None, *args):
+    def get(self, key=None, force_return_type=None, *args, **kwargs):
         """ return the collection or a model """
         if key is None:
             def _callback(data):
                 self.respond_with(data, force_return_type)
-            self.get_collection(_callback, *args)
+            self.get_collection(_callback, *args, **kwargs)
         else:
             try:
-                model = self.get_model(key, *args)
+                model = self.get_model(key, *args, **kwargs)
                 self.respond_with(model, force_return_type)
             except ResourceDoesNotExist:
                 raise tornado.web.HTTPError(404)
 
-    def post(self, *args):
+    def post(self, *args, **kwargs):
         """ create a model """
-        resource = self.create_model(self.load_data(), *args)
+        resource = self.create_model(self.load_data(), *args, **kwargs)
         self.set_status(201)
         self.set_header('Location', '%s://%s%s/%d' % (self.request.protocol,
             self.request.host, self.request.path, resource['id']))
 
-    def put(self, key=None, *args):
+    def put(self, key=None, *args, **kwargs):
         """ update a model """
         try:
-            self.update_model(self.load_data(), key, *args)
+            self.update_model(self.load_data(), key, *args, **kwargs)
             self.set_status(204)
             self.set_header('Location', '%s://%s%s' % (self.request.protocol,
                 self.request.host, self.request.path))
@@ -235,26 +245,47 @@ class ResourceHandler(tornado.web.RequestHandler):
 
     # Extension points
     @mark_as_original_method
-    def create_model(self, model, *args):
+    def create_model(self, model, *args, **kwargs):
         """ create model and return a dictionary of updated attributes """
         raise tornado.web.HTTPError(404)
 
     @mark_as_original_method
-    def get_collection(self, callback, *args):
+    def get_collection(self, callback, *args, **kwargs):
         """ return the collection """
         raise tornado.web.HTTPError(404)
 
     @mark_as_original_method
-    def get_model(self, *args):
+    def get_model(self, *args, **kwargs):
         """ return a model, return None to indicate not found """
         raise tornado.web.HTTPError(404)
 
     @mark_as_original_method
-    def update_model(self, model, *args):
+    def update_model(self, model, *args, **kwargs):
         """ update a model """
         raise tornado.web.HTTPError(404)
 
     @mark_as_original_method
-    def delete_model(self, *args):
+    def delete_model(self, *args, **kwargs):
         """ delete a model """
         raise tornado.web.HTTPError(404)
+
+
+class SwaggerEncoder(JsonEncoder):
+    extension = 'swagger'
+    def encode(self, data):
+        return SwaggerSpecification(data['spec']).generate(data['resource'])
+
+
+class DiscoveryHandler(ResourceHandler):
+    encoders = (SwaggerEncoder,)
+
+    def __init__(self, *args, **kwargs):
+        self.api_spec = kwargs['api_spec']
+        del kwargs['api_spec']
+        super(DiscoveryHandler, self).__init__(*args, **kwargs)
+
+    def get_collection(self, callback, resource_name=None, *args):
+        callback({
+            'spec': self.api_spec,
+            'resource': resource_name
+        })
