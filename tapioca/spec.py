@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+import re
+
 from json import dumps
 from tapioca.visitor import SimpleVisitor
 
@@ -92,7 +94,9 @@ class SwaggerSpecification(SimpleVisitor):
         }
         if self.resource_name:
             root['resourcePath'] = '/%s' % self.resource_name
-            root['apis'] = self.visit(node.resources[0].paths)
+            for resource in node.resources:
+                if resource.name == self.resource_name:
+                    root['apis'] = self.visit(resource.paths)
         else:
             root['apis'] = self.visit(node.resources)
         return root
@@ -115,8 +119,7 @@ class SwaggerSpecification(SimpleVisitor):
     def visit_method(self, node):
         return {
             'httpMethod': node.name,
-            'nickname': ('%s%s' % (node.name,
-                self.current_path.replace('/', '_'))).lower(),
+            'nickname': ('%s%s' % (node.name, re.sub(r'[/\.{}]', '_', self.current_path))).lower(),
             'parameters': self.visit(self.current_params),
             'errorResponses': [],
             'summary': '',
