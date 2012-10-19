@@ -96,7 +96,7 @@ class RespondOnlyJsonResourceHandler(
 class BaseApiHandlerTestCase(AsyncHTTPTestCase, AsyncHTTPClientMixin):
 
     def get_app(self):
-        api = TornadoRESTful()
+        api = TornadoRESTful(version='v1', base_url='http://api.tapioca.com')
         api.add_resource('api', FullTestHandler)
         application = tornado.web.Application(api.get_url_mapping())
         return application

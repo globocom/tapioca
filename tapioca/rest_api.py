@@ -13,42 +13,28 @@ from tapioca.spec import APISpecification, Path, Method, Param
 SIMPLE_POST_MIMETYPE = 'application/x-www-form-urlencoded'
 
 
-class TornadoRESTful(object):
+class Metadata(object):
 
     def __init__(self, version=None, base_url=None):
-        self.api_spec = APISpecification(version=version, base_url=base_url)
-        self.handlers = []
+        self.spec = APISpecification(version=version, base_url=base_url)
 
-    def add_resource(self, path, handler, *args, **kw):
-        normalized_path = path.rstrip('/').lstrip('/')
-        self.add_url_mapping(normalized_path, handler)
-        self.add_metadata_about_resource(normalized_path, handler)
-
-    def add_url_mapping(self, normalized_path, handler):
-        self.handlers.append((r'/%s/?' % normalized_path, handler))
-        self.handlers.append((r'/%s\.(?P<force_return_type>\w+)'\
-                % normalized_path, handler))
-        self.handlers.append((r'/%s/(?P<key>[^.]+)\.(?P<force_return_type>\w+)'\
-                % normalized_path, handler))
-        self.handlers.append((r'/%s/(?P<key>.+)/?' % normalized_path, handler))
-
-    def add_metadata_about_resource(self, path, handler):
+    def add(self, path, handler):
         basic_methods = self.get_basic_methods(handler)
         if len(basic_methods) > 0:
-            self.api_spec.add_path(
+            self.spec.add_path(
                     Path('/%s' % path, methods=basic_methods))
-            self.api_spec.add_path(
+            self.spec.add_path(
                     Path('/%s.{type}' % path,
                         params=[Param('type')],
                         methods=basic_methods))
 
         instance_methods = self.get_instance_methods(handler)
         if len(instance_methods) > 0:
-            self.api_spec.add_path(
+            self.spec.add_path(
                     Path('/%s/{key}' % path,
                         params=[Param('key')],
                         methods=instance_methods))
-            self.api_spec.add_path(
+            self.spec.add_path(
                     Path('/%s/{key}.{type}' % path,
                         params=[Param('key'), Param('type')],
                         methods=instance_methods))
@@ -74,11 +60,31 @@ class TornadoRESTful(object):
             instance_modification_methods.append(Method('DELETE'))
         return instance_modification_methods
 
+
+class TornadoRESTful(object):
+
+    def __init__(self, version=None, base_url=None):
+        self.metadata = Metadata(version=version, base_url=base_url)
+        self.handlers = []
+
+    def add_resource(self, path, handler, *args, **kw):
+        normalized_path = path.rstrip('/').lstrip('/')
+        self.add_url_mapping(normalized_path, handler)
+        self.metadata.add(normalized_path, handler)
+
+    def add_url_mapping(self, normalized_path, handler):
+        self.handlers.append((r'/%s/?' % normalized_path, handler))
+        self.handlers.append((r'/%s\.(?P<force_return_type>\w+)'\
+                % normalized_path, handler))
+        self.handlers.append((r'/%s/(?P<key>[^.]+)\.(?P<force_return_type>\w+)'\
+                % normalized_path, handler))
+        self.handlers.append((r'/%s/(?P<key>.+)/?' % normalized_path, handler))
+
     def get_url_mapping(self):
         return self.handlers
 
     def get_spec(self):
-        return self.api_spec
+        return self.metadata.spec
 
 
 class ResourceDoesNotExist(Exception):
