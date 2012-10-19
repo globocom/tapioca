@@ -285,6 +285,7 @@ class DiscoveryHandler(ResourceHandler):
         super(DiscoveryHandler, self).__init__(*args, **kwargs)
 
     def get_collection(self, callback, resource_name=None, *args):
+        self.set_header('Access-Control-Allow-Origin', '*')
         callback({
             'spec': self.api_spec,
             'resource': resource_name
