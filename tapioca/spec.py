@@ -79,12 +79,6 @@ class SwaggerSpecification(SimpleVisitor):
             self.resource_name = generate_for_resource
         return dumps(self.visit(self.spec))
 
-    def visit_list(self, node):
-        result = []
-        for value in node:
-            result.append(self.visit(value))
-        return result
-
     def visit_apispecification(self, node):
         root = {
             'apiVersion': node.version,
@@ -135,3 +129,38 @@ class SwaggerSpecification(SimpleVisitor):
             'required': node.required,
             'allowMultiple': False,
         }
+
+
+class WADLSpecification(SimpleVisitor):
+
+    def __init__(self, spec):
+        self.spec = spec
+        self.output = []
+
+    def generate(self):
+        self.visit(self.spec)
+        return ''.join(self.output)
+
+    def visit_apispecification(self, node):
+        self.output.append('<application xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:apigee="http://api.apigee.com/wadl/2010/07/" xmlns="http://wadl.dev.java.net/2009/02" xsi:schemaLocation="http://wadl.dev.java.net/2009/02 http://apigee.com/schemas/wadl-schema.xsd http://api.apigee.com/wadl/2010/07/ http://apigee.com/schemas/apigee-wadl-extensions.xsd">')
+        self.output.append('<resources base="' + node.complete_url + '">')
+        self.visit(node.resources)
+        self.output.append('</resources>')
+        self.output.append('</application>')
+
+    def visit_resource(self, node):
+        self.visit(node.paths)
+
+    def visit_path(self, node):
+        self.output.append('<resource path="' + node.name + '">')
+        self.visit(node.params)
+        self.visit(node.methods)
+        self.output.append('</resource>')
+
+    def visit_method(self, node):
+        self.output.append('<method name="' + node.name + '">')
+        self.output.append('</method>')
+
+    def visit_param(self, node):
+        self.output.append('<param name="' + node.name + '" required="true" type="xsd:string" style="template">')
+        self.output.append('</param>')
