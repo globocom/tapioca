@@ -8,7 +8,7 @@ import tornado.web
 import mimeparse
 
 from tapioca.spec import APISpecification, Resource, Path, Method, Param, \
-                SwaggerSpecification
+                SwaggerSpecification, WADLSpecification
 
 
 SIMPLE_POST_MIMETYPE = 'application/x-www-form-urlencoded'
@@ -272,12 +272,21 @@ class ResourceHandler(tornado.web.RequestHandler):
 
 class SwaggerEncoder(JsonEncoder):
     extension = 'swagger'
+
     def encode(self, data):
         return SwaggerSpecification(data['spec']).generate(data['resource'])
 
+class WADLEncoder(Encoder):
+    mimetype = 'application/xml'
+    extension = 'wadl'
+
+    def encode(self, data):
+        return WADLSpecification(data['spec']).generate()
+
+
 
 class DiscoveryHandler(ResourceHandler):
-    encoders = (SwaggerEncoder,)
+    encoders = (SwaggerEncoder, WADLEncoder,)
 
     def __init__(self, *args, **kwargs):
         self.api_spec = kwargs['api_spec']

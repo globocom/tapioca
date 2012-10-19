@@ -26,3 +26,8 @@ class DiscoveryRouteTestCase(AsyncHTTPTestCase, AsyncHTTPClientMixin):
         content = loads(response.body)
         response = self.get(content['apis'][0]['path'])
         assert response.code == 200
+
+    def test_request_wadl_spec(self):
+        response = self.get('/discovery.wadl')
+        assert response.code == 200, response.code
+        assert 'application' in response.body
