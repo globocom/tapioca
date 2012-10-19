@@ -311,6 +311,10 @@ class ResourceHandlerWithoutImplementationTestCase(AsyncHTTPTestCase,\
         response = self.get('/api')
         assert response.code == 404, 'the status code should be 404 but it was %d' % response.code
 
+    def test_try_to_get_instance(self):
+        response = self.get('/api/1')
+        assert response.code == 404, 'the status code should be 404 but it was %d' % response.code
+
     def test_try_to_update_a_resource(self):
         response = self.put(self.get_url('/api/1'), dumps(dict(text='nice')))
         assert response.code == 404, 'the status code should be 404 but it was %d' % response.code
