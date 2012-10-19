@@ -1,0 +1,11 @@
+boxes:
+    - python2.7
+
+install:
+    # install python requirements
+    - sudo pip install -r requirements.txt --use-mirrors
+
+script:
+    # finally run tests
+    - make test
+
