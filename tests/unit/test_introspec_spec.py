@@ -53,35 +53,37 @@ class ExtractInfoFromAPITestCase(TestCase):
         assert my_api.version == 'v1'
         assert my_api.base_url == 'http://api.images.globo.com'
         assert my_api.complete_url == 'http://api.images.globo.com/v1'
-        assert my_api.paths == []
+        assert my_api.resources == []
 
     def test_complete_resource_mapping(self):
         self.api = TornadoRESTful(
                 version='v1', base_url='http://api.images.globo.com')
         self.api.add_resource('comments', ResourceWithDocumentation)
         my_api = self.api.get_spec()
-        assert len(my_api.paths) > 0
-        assert my_api.paths[0].name == '/comments'
-        assert my_api.paths[0].methods[0].name == 'GET'
-        assert my_api.paths[0].methods[1].name == 'POST'
-        assert my_api.paths[1].name == '/comments.{type}'
-        assert len(my_api.paths[1].params) == 1
-        assert my_api.paths[1].params[0].name == 'type'
-        assert my_api.paths[1].methods[0].name == 'GET'
-        assert my_api.paths[1].methods[1].name == 'POST'
-        assert my_api.paths[2].name == '/comments/{key}'
-        assert len(my_api.paths[2].params) == 1
-        assert my_api.paths[2].params[0].name == 'key'
-        assert my_api.paths[2].methods[0].name == 'GET'
-        assert my_api.paths[2].methods[1].name == 'PUT'
-        assert my_api.paths[2].methods[2].name == 'DELETE'
-        assert my_api.paths[3].name == '/comments/{key}.{type}'
-        assert len(my_api.paths[3].params) == 2
-        assert my_api.paths[3].params[0].name == 'key'
-        assert my_api.paths[3].params[1].name == 'type'
-        assert my_api.paths[3].methods[0].name == 'GET'
-        assert my_api.paths[3].methods[1].name == 'PUT'
-        assert my_api.paths[3].methods[2].name == 'DELETE'
+        resource = my_api.resources[0]
+        assert resource.name == 'comments'
+        assert len(resource.paths) > 0
+        assert resource.paths[0].name == '/comments'
+        assert resource.paths[0].methods[0].name == 'GET'
+        assert resource.paths[0].methods[1].name == 'POST'
+        assert resource.paths[1].name == '/comments.{type}'
+        assert len(resource.paths[1].params) == 1
+        assert resource.paths[1].params[0].name == 'type'
+        assert resource.paths[1].methods[0].name == 'GET'
+        assert resource.paths[1].methods[1].name == 'POST'
+        assert resource.paths[2].name == '/comments/{key}'
+        assert len(resource.paths[2].params) == 1
+        assert resource.paths[2].params[0].name == 'key'
+        assert resource.paths[2].methods[0].name == 'GET'
+        assert resource.paths[2].methods[1].name == 'PUT'
+        assert resource.paths[2].methods[2].name == 'DELETE'
+        assert resource.paths[3].name == '/comments/{key}.{type}'
+        assert len(resource.paths[3].params) == 2
+        assert resource.paths[3].params[0].name == 'key'
+        assert resource.paths[3].params[1].name == 'type'
+        assert resource.paths[3].methods[0].name == 'GET'
+        assert resource.paths[3].methods[1].name == 'PUT'
+        assert resource.paths[3].methods[2].name == 'DELETE'
 
     def test_spec_that_only_impl_get_collection(self):
 
@@ -93,13 +95,15 @@ class ExtractInfoFromAPITestCase(TestCase):
                 version='v1', base_url='http://api.images.globo.com')
         self.api.add_resource('comments', HalfImplementedResource)
         my_api = self.api.get_spec()
-        assert len(my_api.paths) == 2
-        assert my_api.paths[0].name == '/comments'
-        assert len(my_api.paths[0].methods) == 1
-        assert my_api.paths[0].methods[0].name == 'GET'
-        assert my_api.paths[1].name == '/comments.{type}'
-        assert len(my_api.paths[1].methods) == 1
-        assert my_api.paths[1].methods[0].name == 'GET'
+        resource = my_api.resources[0]
+        assert resource.name == 'comments'
+        assert len(resource.paths) == 2
+        assert resource.paths[0].name == '/comments'
+        assert len(resource.paths[0].methods) == 1
+        assert resource.paths[0].methods[0].name == 'GET'
+        assert resource.paths[1].name == '/comments.{type}'
+        assert len(resource.paths[1].methods) == 1
+        assert resource.paths[1].methods[0].name == 'GET'
 
     def test_spec_that_only_impl_create_model(self):
 
@@ -111,13 +115,14 @@ class ExtractInfoFromAPITestCase(TestCase):
                 version='v1', base_url='http://api.images.globo.com')
         self.api.add_resource('comments', HalfImplementedResource)
         my_api = self.api.get_spec()
-        assert len(my_api.paths) == 2
-        assert my_api.paths[0].name == '/comments'
-        assert len(my_api.paths[0].methods) == 1
-        assert my_api.paths[0].methods[0].name == 'POST'
-        assert my_api.paths[1].name == '/comments.{type}'
-        assert len(my_api.paths[1].methods) == 1
-        assert my_api.paths[1].methods[0].name == 'POST'
+        resource = my_api.resources[0]
+        assert len(resource.paths) == 2
+        assert resource.paths[0].name == '/comments'
+        assert len(resource.paths[0].methods) == 1
+        assert resource.paths[0].methods[0].name == 'POST'
+        assert resource.paths[1].name == '/comments.{type}'
+        assert len(resource.paths[1].methods) == 1
+        assert resource.paths[1].methods[0].name == 'POST'
 
     def test_spec_that_only_impl_get_model(self):
 
@@ -129,13 +134,14 @@ class ExtractInfoFromAPITestCase(TestCase):
                 version='v1', base_url='http://api.images.globo.com')
         self.api.add_resource('comments', HalfImplementedResource)
         my_api = self.api.get_spec()
-        assert len(my_api.paths) == 2
-        assert my_api.paths[0].name == '/comments/{key}'
-        assert len(my_api.paths[0].methods) == 1
-        assert my_api.paths[0].methods[0].name == 'GET'
-        assert my_api.paths[1].name == '/comments/{key}.{type}'
-        assert len(my_api.paths[1].methods) == 1
-        assert my_api.paths[1].methods[0].name == 'GET'
+        resource = my_api.resources[0]
+        assert len(resource.paths) == 2
+        assert resource.paths[0].name == '/comments/{key}'
+        assert len(resource.paths[0].methods) == 1
+        assert resource.paths[0].methods[0].name == 'GET'
+        assert resource.paths[1].name == '/comments/{key}.{type}'
+        assert len(resource.paths[1].methods) == 1
+        assert resource.paths[1].methods[0].name == 'GET'
 
     def test_spec_that_only_impl_update_model(self):
 
@@ -147,13 +153,14 @@ class ExtractInfoFromAPITestCase(TestCase):
                 version='v1', base_url='http://api.images.globo.com')
         self.api.add_resource('comments', HalfImplementedResource)
         my_api = self.api.get_spec()
-        assert len(my_api.paths) == 2
-        assert my_api.paths[0].name == '/comments/{key}'
-        assert len(my_api.paths[0].methods) == 1
-        assert my_api.paths[0].methods[0].name == 'PUT'
-        assert my_api.paths[1].name == '/comments/{key}.{type}'
-        assert len(my_api.paths[1].methods) == 1
-        assert my_api.paths[1].methods[0].name == 'PUT'
+        resource = my_api.resources[0]
+        assert len(resource.paths) == 2
+        assert resource.paths[0].name == '/comments/{key}'
+        assert len(resource.paths[0].methods) == 1
+        assert resource.paths[0].methods[0].name == 'PUT'
+        assert resource.paths[1].name == '/comments/{key}.{type}'
+        assert len(resource.paths[1].methods) == 1
+        assert resource.paths[1].methods[0].name == 'PUT'
 
     def test_spec_that_only_impl_delete_model(self):
 
@@ -165,10 +172,11 @@ class ExtractInfoFromAPITestCase(TestCase):
                 version='v1', base_url='http://api.images.globo.com')
         self.api.add_resource('comments', HalfImplementedResource)
         my_api = self.api.get_spec()
-        assert len(my_api.paths) == 2
-        assert my_api.paths[0].name == '/comments/{key}'
-        assert len(my_api.paths[0].methods) == 1
-        assert my_api.paths[0].methods[0].name == 'DELETE'
-        assert my_api.paths[1].name == '/comments/{key}.{type}'
-        assert len(my_api.paths[1].methods) == 1
-        assert my_api.paths[1].methods[0].name == 'DELETE'
+        resource = my_api.resources[0]
+        assert len(resource.paths) == 2
+        assert resource.paths[0].name == '/comments/{key}'
+        assert len(resource.paths[0].methods) == 1
+        assert resource.paths[0].methods[0].name == 'DELETE'
+        assert resource.paths[1].name == '/comments/{key}.{type}'
+        assert len(resource.paths[1].methods) == 1
+        assert resource.paths[1].methods[0].name == 'DELETE'

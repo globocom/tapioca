@@ -3,7 +3,8 @@
 
 from unittest import TestCase
 
-from tapioca.spec import APISpecification, Path, Param, Method, APIError
+from tapioca.spec import APISpecification, Path, Param, Resource, \
+        Method, APIError
 
 
 class SpecificationTestCase(TestCase):
@@ -13,6 +14,7 @@ class SpecificationTestCase(TestCase):
         assert spec.version == 'v1'
         assert spec.base_url == 'http://api.glb.com'
         assert spec.complete_url == 'http://api.glb.com/v1'
+        assert spec.resources == []
 
     def test_create_path(self):
         path = Path('/comments')
@@ -28,6 +30,12 @@ class SpecificationTestCase(TestCase):
         assert param.required == True
         assert param.options == []
         assert param.description == None
+
+    def test_create_resource(self):
+        resource = Resource('comments', description='')
+        assert resource.name == 'comments'
+        assert resource.description == ''
+        assert resource.paths == []
 
     def test_create_method(self):
         method = Method('POST', errors=[])
@@ -48,38 +56,47 @@ class SpecificationTestCase(TestCase):
         assert param.options == []
         assert param.description == None
 
-    def test_possible_add_a_path(self):
+    def test_possible_add_resource(self):
         spec = APISpecification(version='v1', base_url='http://api.glb.com')
-        path = Path('/comments')
-        spec.add_path(path)
-        assert len(spec.paths) == 1
-        assert path.name == '/comments'
+        resource = Resource('comments')
+        resource.add_path(Path('/comments'))
+        spec.add_resource(resource)
+        assert len(spec.resources) == 1
+        assert len(resource.paths) == 1
+        assert resource.name == 'comments'
+        assert resource.paths[0].name == '/comments'
 
     def test_possible_specify_simple_api(self):
         api = APISpecification(version='', base_url='')
-        api.add_path(Path('/comments.{key}',
-            params=[
-                Param('key', default_value='json', required=False, options=[
-                    'json',
-                    'js',
-                    'xml'
-                ])
-            ],
-            methods=[
-                Method('GET', errors=[
-                    APIError(code=301, description=''),
-                    APIError(code=404, description='')
-                ]),
-                Method('POST', errors=[
-                    APIError(code=301, description=''),
-                    APIError(code=404, description='')
-                ])
-            ])
-        )
-        assert api.paths[0].name == '/comments.{key}'
-        assert api.paths[0].params[0].name == 'key'
-        assert api.paths[0].params[0].default_value == 'json'
-        assert api.paths[0].params[0].required == False
-        assert api.paths[0].params[0].options == ['json', 'js', 'xml']
-        assert api.paths[0].methods[0].name == 'GET'
-        assert api.paths[0].methods[1].name == 'POST'
+        api.add_resource(Resource('comments',
+            paths=[
+                Path('/comments.{key}',
+                    params=[
+                        Param('key', default_value='json', required=False,
+                            options=[
+                                'json',
+                                'js',
+                                'xml'
+                        ]),
+                    ],
+                    methods=[
+                        Method('GET', errors=[
+                            APIError(code=301, description=''),
+                            APIError(code=404, description='')
+                        ]),
+                        Method('POST', errors=[
+                            APIError(code=301, description=''),
+                            APIError(code=404, description='')
+                        ]),
+                    ]
+                ),
+            ]
+        ))
+        resource = api.resources[0]
+        assert resource.paths[0].name == '/comments.{key}'
+        assert resource.paths[0].params[0].name == 'key'
+        assert resource.paths[0].params[0].default_value == 'json'
+        assert resource.paths[0].params[0].required == False
+        assert resource.paths[0].params[0].options == ['json', 'js', 'xml']
+        assert resource.paths[0].methods[0].name == 'GET'
+        assert resource.paths[0].methods[1].name == 'POST'

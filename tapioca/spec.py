@@ -21,17 +21,28 @@ class APISpecification(SpecItem):
         self.version = version
         self.base_url = base_url
         self.complete_url = '%s/%s' % (self.base_url, self.version)
-        self.paths = []
+        self.resources = []
 
-    def add_path(self, path):
-        self.paths.append(path)
-
+    def add_resource(self, resource):
+        self.resources.append(resource)
 
 class Path(NamedItem):
     def __init__(self, name=None, params=[], methods=[], *args, **kwargs):
         super(Path, self).__init__(name, *args, **kwargs)
         self.params = params
         self.methods = methods
+
+
+class Resource(NamedItem):
+    def __init__(self, name=None, paths=None, *args, **kwargs):
+        super(Resource, self).__init__(name, *args, **kwargs)
+        if paths:
+            self.paths = paths
+        else:
+            self.paths = []
+
+    def add_path(self, path):
+        self.paths.append(path)
 
 
 class Param(NamedItem):
@@ -59,8 +70,11 @@ class SwaggerSpecification(SimpleVisitor):
 
     def __init__(self, spec):
         self.spec = spec
+        self.resource_name = None
 
-    def generate(self):
+    def generate(self, generate_for_resource=None):
+        if generate_for_resource:
+            self.resource_name = generate_for_resource
         return dumps(self.visit(self.spec))
 
     def visit_list(self, node):
@@ -70,12 +84,23 @@ class SwaggerSpecification(SimpleVisitor):
         return result
 
     def visit_apispecification(self, node):
-        return {
+        root = {
             'apiVersion': node.version,
             'swaggerVersion': '1.1',
             'basePath': node.complete_url,
-            'apis':  self.visit(node.paths),
             'models': []
+        }
+        if self.resource_name:
+            root['resourcePath'] = '/%s' % self.resource_name
+            root['apis'] = self.visit(node.resources[0].paths)
+        else:
+            root['apis'] = self.visit(node.resources)
+        return root
+
+    def visit_resource(self, node):
+        return {
+            'path': '/swagger/%s' % node.name,
+            'description': ''
         }
 
     def visit_path(self, node):

@@ -5,13 +5,13 @@ from json import loads
 from unittest import TestCase
 
 from tapioca.spec import SwaggerSpecification, APISpecification, \
-        Path, Method, Param
+        Resource, Path, Method, Param
 
 
 class SwaggerGenerationTestCase(TestCase):
 
-    def apply_generation(self, api):
-        result = SwaggerSpecification(api).generate()
+    def apply_generation(self, api, resource=None):
+        result = SwaggerSpecification(api).generate(resource)
         return loads(result)
 
     def test_general_info(self):
@@ -23,10 +23,28 @@ class SwaggerGenerationTestCase(TestCase):
         assert result['apis'] == []
         assert result['models'] == []
 
+    def test_gen_spec_generic_with_resource(self):
+        api = APISpecification(version='v1', base_url='http://api.globo.com')
+        api.add_resource(
+            Resource('comments',
+                paths=[
+                    Path('/comments', methods=[Method('GET')])
+                ]))
+        result = self.apply_generation(api)
+        assert len(result['apis']) == 1
+        assert result['apis'][0]['path'] == '/swagger/comments'
+        assert result['apis'][0]['description'] == ''
+
     def test_gen_spec_for_a_resource(self):
         api = APISpecification(version='v1', base_url='http://api.globo.com')
-        api.add_path(Path('/comments', methods=[Method('GET')]))
-        result = self.apply_generation(api)
+        resource_name = 'comments'
+        api.add_resource(
+            Resource(resource_name,
+                paths=[
+                    Path('/comments', methods=[Method('GET')])
+                ]))
+        result = self.apply_generation(api, resource_name)
+        assert result['resourcePath'] == '/comments'
         assert len(result['apis']) == 1
         assert result['apis'][0]['path'] == '/comments'
         assert result['apis'][0]['description'] == ''
@@ -41,8 +59,12 @@ class SwaggerGenerationTestCase(TestCase):
 
     def test_gen_spec_for_put_method(self):
         api = APISpecification(version='v1', base_url='http://api.globo.com')
-        api.add_path(Path('/dogs', methods=[Method('PUT')]))
-        result = self.apply_generation(api)
+        api.add_resource(Resource('dogs',
+            paths=[
+                Path('/dogs', methods=[
+                    Method('PUT')])]))
+        result = self.apply_generation(api, 'dogs')
+        assert result['resourcePath'] == '/dogs'
         assert result['apis'][0]['path'] == '/dogs'
         operation = result['apis'][0]['operations'][0]
         assert operation['httpMethod'] == 'PUT'
@@ -50,19 +72,23 @@ class SwaggerGenerationTestCase(TestCase):
 
     def test_gen_spec_with_params(self):
         api = APISpecification(version='v1', base_url='http://api.globo.com')
-        api.add_path(Path('/dogs.{format}',
-            params=[
-                Param('format')
-            ],
-            methods=[
-                Method('GET')
-            ]
-        ))
-        result = self.apply_generation(api)
-        assert result['apis'][0]['path'] == '/dogs.{format}'
+        api.add_resource(Resource('dogs', 
+            paths=[
+                Path('/dogs/{key}',
+                    params=[
+                        Param('key')
+                    ],
+                    methods=[
+                        Method('GET')
+                    ]
+                ),
+            ])
+        )
+        result = self.apply_generation(api, 'dogs')
+        assert result['apis'][0]['path'] == '/dogs/{key}'
         operation = result['apis'][0]['operations'][0]
         assert len(operation['parameters']) == 1
-        assert operation['parameters'][0]['name'] == 'format'
+        assert operation['parameters'][0]['name'] == 'key'
         assert operation['parameters'][0]['paramType'] == 'path'
         assert operation['parameters'][0]['description'] == ''
         assert operation['parameters'][0]['dataType'] == 'String'

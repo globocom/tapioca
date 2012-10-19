@@ -7,7 +7,7 @@ import logging
 import tornado.web
 import mimeparse
 
-from tapioca.spec import APISpecification, Path, Method, Param
+from tapioca.spec import APISpecification, Resource, Path, Method, Param
 
 
 SIMPLE_POST_MIMETYPE = 'application/x-www-form-urlencoded'
@@ -19,25 +19,27 @@ class Metadata(object):
         self.spec = APISpecification(version=version, base_url=base_url)
 
     def add(self, path, handler):
+        resource = Resource(path)
         basic_methods = self.get_basic_methods(handler)
         if len(basic_methods) > 0:
-            self.spec.add_path(
+            resource.add_path(
                     Path('/%s' % path, methods=basic_methods))
-            self.spec.add_path(
+            resource.add_path(
                     Path('/%s.{type}' % path,
                         params=[Param('type')],
                         methods=basic_methods))
 
         instance_methods = self.get_instance_methods(handler)
         if len(instance_methods) > 0:
-            self.spec.add_path(
+            resource.add_path(
                     Path('/%s/{key}' % path,
                         params=[Param('key')],
                         methods=instance_methods))
-            self.spec.add_path(
+            resource.add_path(
                     Path('/%s/{key}.{type}' % path,
                         params=[Param('key'), Param('type')],
                         methods=instance_methods))
+        self.spec.add_resource(resource)
 
     def get_basic_methods(self, handler):
         basic_methods = []
