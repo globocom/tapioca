@@ -1,7 +1,5 @@
-Tapioca
+Tapioca [![build status](https://secure.travis-ci.org/globocom/tapioca.png)](http://travis-ci.org/globocom/tapioca)
 =======
-
-![Travis CI](https://secure.travis-ci.org/globocom/tapioca.png)
 
 Tapioca is a small and flexible micro-framework on top of Tornado.
 It provides a simpler way to create RESTful API's.
