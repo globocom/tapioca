@@ -1,6 +1,3 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-
 import json
 import logging
 
@@ -77,21 +74,21 @@ class TornadoRESTful(object):
         self.metadata.add(normalized_path, handler)
 
     def add_url_mapping(self, normalized_path, handler):
-        self.handlers.append((r'/{0}/?'.format(normalized_path), handler))
-        self.handlers.append((r'/{0}\.(?P<force_return_type>\w+)'
+        self.handlers.append(('/{0}/?'.format(normalized_path), handler))
+        self.handlers.append(('/{0}\.(?P<force_return_type>\w+)'
                 .format(normalized_path), handler))
-        self.handlers.append((r'/{0}/(?P<key>[^.]+)\.(?P<force_return_type>\w+)'
+        self.handlers.append(('/{0}/(?P<key>[^.]+)\.(?P<force_return_type>\w+)'
                 .format(normalized_path), handler))
-        self.handlers.append((r'/{0}/(?P<key>.+)/?'
+        self.handlers.append(('/{0}/(?P<key>.+)/?'
                 .format(normalized_path), handler))
 
     def get_url_mapping(self):
         url_mapping = self.handlers
         if self.discovery:
             url_mapping = url_mapping + [
-            (r'/discovery\.(?P<force_return_type>\w+)',
+            ('/discovery\.(?P<force_return_type>\w+)',
                 DiscoveryHandler, {'api_spec': self.metadata.spec}),
-            (r'/discovery/(?P<resource_name>[\w_/]+)\.(?P<force_return_type>\w+)',
+            ('/discovery/(?P<resource_name>[\w_/]+)\.(?P<force_return_type>\w+)',
                 DiscoveryHandler, {'api_spec': self.metadata.spec})
             ]
         return url_mapping
@@ -202,7 +199,8 @@ class ResourceHandler(tornado.web.RequestHandler):
 
     def load_data(self):
         content_type = self.get_content_type_based_on('Content-Type')
-        data = self.get_encoder_for(content_type).decode(self.request.body)
+        data_as_string = self.request.body.decode('utf-8')
+        data = self.get_encoder_for(content_type).decode(data_as_string)
         return data
 
     # Generic API HTTP Verbs

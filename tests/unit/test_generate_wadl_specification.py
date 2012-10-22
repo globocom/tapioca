@@ -1,6 +1,3 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-
 from xml.etree import ElementTree
 from unittest import TestCase
 

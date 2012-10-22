@@ -1,6 +1,3 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-
 from unittest import TestCase
 
 from tapioca.spec import APISpecification, Path, Param, Resource, \

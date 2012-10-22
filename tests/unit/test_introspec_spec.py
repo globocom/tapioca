@@ -1,8 +1,4 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-
 from unittest import TestCase
-
 
 from tapioca import TornadoRESTful, ResourceHandler
 from tapioca.spec import *

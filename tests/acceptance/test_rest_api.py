@@ -1,6 +1,3 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-
 import re
 import logging
 from json import loads, dumps
@@ -109,7 +106,7 @@ class BaseApiHandlerTestCase(AsyncHTTPTestCase, AsyncHTTPClientMixin):
     def test_get_request_to_list_all_resource_instances(self):
         response = self.get('/api')
         assert_response_code(response, 200)
-        resources = loads(response.body)
+        resources = loads(response.body.decode('utf-8'))
         number_of_items = len(resources)
         assert number_of_items == 10, 'should return 10 resources but returned {0:d}'.format(number_of_items)
         for item in resources:
@@ -119,7 +116,7 @@ class BaseApiHandlerTestCase(AsyncHTTPTestCase, AsyncHTTPClientMixin):
     def test_get_a_specific_resource_using_get_request(self):
         response = self.get('/api/3')
         assert_response_code(response, 200)
-        resource = loads(response.body)
+        resource = loads(response.body.decode('utf-8'))
         assert 'id' in resource, 'should have the key \'id\' in the resource instance {0!s}'.format(resource)
         assert 'text' in resource, 'should have the \'text\' in the resource instance {0!s}'.format(resource)
 
@@ -138,12 +135,12 @@ class BaseApiHandlerTestCase(AsyncHTTPTestCase, AsyncHTTPClientMixin):
     def test_put_to_update_an_existing_resource(self):
         response = self.get('/api/1')
         assert_response_code(response, 200)
-        resource = loads(response.body)
+        resource = loads(response.body.decode('utf-8'))
         resource['comment'] = 'wow!'
         response = self.put(self.get_url('/api/1'), dumps(resource))
         assert_response_code(response, 204)
         response = self.get('/api/1')
-        resource = loads(response.body)
+        resource = loads(response.body.decode('utf-8'))
         assert 'comment' in resource
         assert resource['comment'] == 'wow!'
 
@@ -162,7 +159,7 @@ class BaseApiHandlerTestCase(AsyncHTTPTestCase, AsyncHTTPClientMixin):
         response = self._fetch(url, 'GET', headers=dict(Accept='text/xml'))
         assert_response_code(response, 200)
         assert 'text/xml' in response.headers['Content-Type'], 'the content-type should be text/xml but it was {0}'.format(response.headers['Content-Type'])
-        assert response.body == '<comment id="1">X</comment>'
+        assert response.body == b'<comment id="1">X</comment>'
 
     def test_choose_response_type_based_on_the_accept_header(self):
         url = self.get_url('/api/1')
@@ -206,7 +203,7 @@ class BaseApiHandlerTestCase(AsyncHTTPTestCase, AsyncHTTPClientMixin):
                 'Accept': 'text/javascript'
             })
         assert_response_code(response, 200)
-        assert response.body.startswith('my_callback(')
+        assert response.body.decode('utf-8').startswith('my_callback(')
 
     def test_use_the_default_encoder(self):
         response = self._fetch(
@@ -223,18 +220,18 @@ class BaseApiHandlerTestCase(AsyncHTTPTestCase, AsyncHTTPClientMixin):
                 'Accept': CHROME_ACCEPT_HEADER
             })
         assert_response_code(response, 200)
-        assert '<body>' in response.body
+        assert '<body>' in response.body.decode('utf-8')
 
     def test_should_return_type_json_as_specified_in_url(self):
         response = self.get('/api/1.json')
         assert_response_code(response, 200)
-        data = loads(response.body)
-        assert 'id' in data
+        data = loads(response.body.decode('utf-8'))
+        assert 'id' in data.decode('utf-8')
 
     def test_should_return_type_xml_as_specified_in_url(self):
         response = self.get('/api/1.xml')
         assert_response_code(response, 200)
-        assert '</comment>' in response.body
+        assert '</comment>' in response.body.decode('utf-8')
 
     def test_should_raise_404_when_extension_is_not_found(self):
         response = self.get('/api/1.rb')
@@ -243,17 +240,17 @@ class BaseApiHandlerTestCase(AsyncHTTPTestCase, AsyncHTTPClientMixin):
     def test_should_return_type_json_as_specified_in_url(self):
         response = self.get('/api/1.js?callback=myCallbackFooBar')
         assert_response_code(response, 200)
-        assert 'myCallbackFooBar(' in response.body
+        assert response.body.decode('utf-8').startswith('myCallbackFooBar(')
 
     def test_should_return_the_default_callback_when_i_not_specify_in_my_request(self):
         response = self.get('/api/1.js')
         assert_response_code(response, 200)
-        assert re.match(r'^[\w_]+\(.*', response.body), response.body
+        assert re.match(b'^[\w_]+\(.*', response.body), response.body.decode('utf-8')
 
     def test_should_return_the_default_callback_when_i_not_specify_in_my_request(self):
         response = self.get('/api/1.js')
         assert_response_code(response, 200)
-        assert re.match(r'^defaultCallback\(.*', response.body), response.body
+        assert re.match(b'^defaultCallback\(.*', response.body), response.body.decode('utf-8')
 
 
 def assert_response_code(response, expected_status_code):
@@ -281,12 +278,12 @@ class JsonEncoderDefineAnDefaultCallbackTestCase(AsyncHTTPTestCase,\
     def test_should_return_the_default_callback_when_i_not_specify_in_my_request(self):
         response = self.get('/api/1.js')
         assert_response_code(response, 200)
-        assert re.match(r'^thePersonalizedCallback\(.*', response.body), response.body
+        assert re.match(b'^thePersonalizedCallback\(.*', response.body), response.body.decode('utf-8')
 
     def test_should_return_with_the_callback_name_i_choose(self):
         response = self.get('/api/1.js?callback=fooBar')
         assert_response_code(response, 200)
-        assert 'fooBar(' in response.body
+        assert response.body.decode('utf-8').startswith('fooBar(')
 
 
 class ResourceHandlerWithoutImplementationTestCase(AsyncHTTPTestCase,\

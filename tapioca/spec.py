@@ -1,6 +1,3 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-
 import re
 
 from json import dumps
@@ -111,7 +108,7 @@ class SwaggerSpecification(SimpleVisitor):
         }
 
     def slugify_method_name(self, name):
-        return re.sub(r'[/\.{}]', '_', name)
+        return re.sub('[/\.{}]', '_', name)
 
     def visit_method(self, node):
         method_name = self.slugify_method_name(self.current_path)

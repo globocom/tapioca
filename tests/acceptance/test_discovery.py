@@ -1,6 +1,3 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-
 from json import loads
 
 import tornado.web
@@ -23,11 +20,11 @@ class DiscoveryRouteTestCase(AsyncHTTPTestCase, AsyncHTTPClientMixin):
     def test_request_swagger_spec(self):
         response = self.get('/discovery.swagger')
         assert response.code == 200, response.code
-        content = loads(response.body)
+        content = loads(response.body.decode('utf-8'))
         response = self.get(content['apis'][0]['path'])
         assert response.code == 200
 
     def test_request_wadl_spec(self):
         response = self.get('/discovery.wadl')
         assert response.code == 200, response.code
-        assert 'application' in response.body
+        assert 'application' in response.body.decode('utf-8')
