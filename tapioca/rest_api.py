@@ -24,20 +24,20 @@ class Metadata(object):
         basic_methods = self.get_basic_methods(handler)
         if len(basic_methods) > 0:
             resource.add_path(
-                    Path('/%s' % path, methods=basic_methods))
+                    Path('/{0}'.format(path), methods=basic_methods))
             resource.add_path(
-                    Path('/%s.{type}' % path,
+                    Path('/{0}.{{type}}'.format(path),
                         params=[Param('type')],
                         methods=basic_methods))
 
         instance_methods = self.get_instance_methods(handler)
         if len(instance_methods) > 0:
             resource.add_path(
-                    Path('/%s/{key}' % path,
+                    Path('/{0}/{{key}}'.format(path),
                         params=[Param('key')],
                         methods=instance_methods))
             resource.add_path(
-                    Path('/%s/{key}.{type}' % path,
+                    Path('/{0}/{{key}}.{{type}}'.format(path),
                         params=[Param('key'), Param('type')],
                         methods=instance_methods))
         self.spec.add_resource(resource)
@@ -77,12 +77,13 @@ class TornadoRESTful(object):
         self.metadata.add(normalized_path, handler)
 
     def add_url_mapping(self, normalized_path, handler):
-        self.handlers.append((r'/%s/?' % normalized_path, handler))
-        self.handlers.append((r'/%s\.(?P<force_return_type>\w+)'\
-                % normalized_path, handler))
-        self.handlers.append((r'/%s/(?P<key>[^.]+)\.(?P<force_return_type>\w+)'\
-                % normalized_path, handler))
-        self.handlers.append((r'/%s/(?P<key>.+)/?' % normalized_path, handler))
+        self.handlers.append((r'/{0}/?'.format(normalized_path), handler))
+        self.handlers.append((r'/{0}\.(?P<force_return_type>\w+)'
+                .format(normalized_path), handler))
+        self.handlers.append((r'/{0}/(?P<key>[^.]+)\.(?P<force_return_type>\w+)'
+                .format(normalized_path), handler))
+        self.handlers.append((r'/{0}/(?P<key>.+)/?'
+                .format(normalized_path), handler))
 
     def get_url_mapping(self):
         url_mapping = self.handlers
@@ -223,16 +224,16 @@ class ResourceHandler(tornado.web.RequestHandler):
         """ create a model """
         resource = self.create_model(self.load_data(), *args, **kwargs)
         self.set_status(201)
-        self.set_header('Location', '%s://%s%s/%d' % (self.request.protocol,
-            self.request.host, self.request.path, resource['id']))
+        self.set_header('Location', '{r.protocol}://{r.host}{r.path}/{id:d}'
+                .format(r=self.request, id=resource['id']))
 
     def put(self, key=None, *args, **kwargs):
         """ update a model """
         try:
             self.update_model(self.load_data(), key, *args, **kwargs)
             self.set_status(204)
-            self.set_header('Location', '%s://%s%s' % (self.request.protocol,
-                self.request.host, self.request.path))
+            self.set_header('Location', '{r.protocol}://{r.host}{r.path}'
+                .format(r=self.request))
         except ResourceDoesNotExist:
             raise tornado.web.HTTPError(404)
 

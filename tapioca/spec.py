@@ -22,7 +22,7 @@ class APISpecification(SpecItem):
     def __init__(self, version=None, base_url=None):
         self.version = version
         self.base_url = base_url
-        self.complete_url = '%s/%s' % (self.base_url, self.version)
+        self.complete_url = '{s.base_url}/{s.version}'.format(s=self)
         self.resources = []
 
     def add_resource(self, resource):
@@ -87,7 +87,7 @@ class SwaggerSpecification(SimpleVisitor):
             'models': []
         }
         if self.resource_name:
-            root['resourcePath'] = '/%s' % self.resource_name
+            root['resourcePath'] = '/{0}'.format(self.resource_name)
             for resource in node.resources:
                 if resource.name == self.resource_name:
                     root['apis'] = self.visit(resource.paths)
@@ -97,7 +97,7 @@ class SwaggerSpecification(SimpleVisitor):
 
     def visit_resource(self, node):
         return {
-            'path': '/discovery/%s.swagger' % node.name,
+            'path': '/discovery/{node.name}.swagger'.format(node=node),
             'description': ''
         }
 
@@ -110,10 +110,14 @@ class SwaggerSpecification(SimpleVisitor):
             'operations': self.visit(node.methods)
         }
 
+    def slugify_method_name(self, name):
+        return re.sub(r'[/\.{}]', '_', name)
+
     def visit_method(self, node):
+        method_name = self.slugify_method_name(self.current_path)
         return {
             'httpMethod': node.name,
-            'nickname': ('%s%s' % (node.name, re.sub(r'[/\.{}]', '_', self.current_path))).lower(),
+            'nickname': '{0}{1}'.format(node.name, method_name).lower(),
             'parameters': self.visit(self.current_params),
             'errorResponses': [],
             'summary': '',
@@ -143,7 +147,8 @@ class WADLSpecification(SimpleVisitor):
 
     def visit_apispecification(self, node):
         self.output.append('<application xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:apigee="http://api.apigee.com/wadl/2010/07/" xmlns="http://wadl.dev.java.net/2009/02" xsi:schemaLocation="http://wadl.dev.java.net/2009/02 http://apigee.com/schemas/wadl-schema.xsd http://api.apigee.com/wadl/2010/07/ http://apigee.com/schemas/apigee-wadl-extensions.xsd">')
-        self.output.append('<resources base="' + node.complete_url + '">')
+        self.output.append('<resources base="{node.complete_url}">'
+                .format(node=node))
         self.visit(node.resources)
         self.output.append('</resources>')
         self.output.append('</application>')
@@ -152,15 +157,15 @@ class WADLSpecification(SimpleVisitor):
         self.visit(node.paths)
 
     def visit_path(self, node):
-        self.output.append('<resource path="' + node.name + '">')
+        self.output.append('<resource path="{node.name}">'.format(node=node))
         self.visit(node.params)
         self.visit(node.methods)
         self.output.append('</resource>')
 
     def visit_method(self, node):
-        self.output.append('<method name="' + node.name + '">')
+        self.output.append('<method name="{node.name}">'.format(node=node))
         self.output.append('</method>')
 
     def visit_param(self, node):
-        self.output.append('<param name="' + node.name + '" required="true" type="xsd:string" style="template">')
+        self.output.append('<param name="{node.name}" required="true" type="xsd:string" style="template">'.format(node=node))
         self.output.append('</param>')

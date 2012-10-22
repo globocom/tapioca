@@ -10,7 +10,7 @@ class AsyncHTTPClientMixin(object):
     def get(self, path, **querystring):
         url = self.get_url(path)
         if querystring:
-            url = "%s?%s" % (url, urllib.urlencode(querystring))
+            url = "{0}?{1}".format(url, urllib.urlencode(querystring))
         return self._fetch(url, 'GET')
 
     def post(self, url, data):

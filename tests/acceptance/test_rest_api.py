@@ -27,11 +27,11 @@ class XmlEncoder(object):
         self.handler = handler
 
     def encode(self, resource):
-        data = '%s'
+        data = '{}'
         if type(resource) == list:
-            data = '<comments>%s</comments>'
-        return data % ('<comment id="%s">%s</comment>' % \
-                (resource['id'], resource['text']))
+            data = '<comments>{}</comments>'
+        return data.format('<comment id="{id}">{text}</comment>'
+                .format(**resource))
 
     def decode(self, data):
         doc = ElementTree.fromstring(data)
@@ -60,7 +60,7 @@ class ImplementAllRequiredMethodsInApiHandler:
     def create_model(self, model):
         model['id'] = max([int(x['id']) for x in FAKE_DATABASE]) + 1
         FAKE_DATABASE.append(model)
-        logging.debug('created %s' % str(model))
+        logging.debug('created {0!s}'.format(model))
         return model
 
     def get_collection(self, callback):
@@ -71,7 +71,7 @@ class ImplementAllRequiredMethodsInApiHandler:
 
     def update_model(self, model, cid, *args):
         model['id'] = int(cid)
-        logging.debug('updating %s %s' % (str(cid), str(model)))
+        logging.debug('updating {0!s} {1!s}'.format(str(cid), str(model)))
         FAKE_DATABASE[FAKE_DATABASE.index(self._find(int(cid)))] = model
 
     def delete_model(self, cid):
@@ -108,40 +108,40 @@ class BaseApiHandlerTestCase(AsyncHTTPTestCase, AsyncHTTPClientMixin):
 
     def test_get_request_to_list_all_resource_instances(self):
         response = self.get('/api')
-        assert response.code == 200, 'the status code should be 200 but it was %d' % response.code
+        assert_response_code(response, 200)
         resources = loads(response.body)
         number_of_items = len(resources)
-        assert number_of_items == 10, 'should return 10 resources but returned %d' % number_of_items
+        assert number_of_items == 10, 'should return 10 resources but returned {0:d}'.format(number_of_items)
         for item in resources:
             assert 'id' in item, 'should have the key \'id\' in the resource instance'
             assert 'text' in item, 'should have the \'text\' in the resource instance'
 
     def test_get_a_specific_resource_using_get_request(self):
         response = self.get('/api/3')
-        assert response.code == 200, 'the status code should be 200 but it was %d' % response.code
+        assert_response_code(response, 200)
         resource = loads(response.body)
-        assert 'id' in resource, 'should have the key \'id\' in the resource instance %s' % str(resource)
-        assert 'text' in resource, 'should have the \'text\' in the resource instance %s' % str(resource)
+        assert 'id' in resource, 'should have the key \'id\' in the resource instance {0!s}'.format(resource)
+        assert 'text' in resource, 'should have the \'text\' in the resource instance {0!s}'.format(resource)
 
     def test_get_a_resource_that_does_not_exist(self):
         response = self.get('/api/30')
-        assert response.code == 404, 'the status code should be 404 but it was %d' % response.code
+        assert_response_code(response, 404)
 
     def test_post_to_create_a_new_resource(self):
         a_new_item = {
             'text': 'this is my new item'
         }
         response = self.post(self.get_url('/api'), dumps(a_new_item))
-        assert response.code == 201, 'the status code should be 201 but it was %d' % response.code
+        assert_response_code(response, 201)
         assert 'Location' in response.headers
 
     def test_put_to_update_an_existing_resource(self):
         response = self.get('/api/1')
-        assert response.code == 200, 'the status code should be 200 but it was %d' % response.code
+        assert_response_code(response, 200)
         resource = loads(response.body)
         resource['comment'] = 'wow!'
         response = self.put(self.get_url('/api/1'), dumps(resource))
-        assert response.code == 204, 'the status code should be 204 but it was %d' % response.code
+        assert_response_code(response, 204)
         response = self.get('/api/1')
         resource = loads(response.body)
         assert 'comment' in resource
@@ -149,64 +149,63 @@ class BaseApiHandlerTestCase(AsyncHTTPTestCase, AsyncHTTPClientMixin):
 
     def test_try_to_update_a_resource_that_does_not_exist(self):
         response = self.put(self.get_url('/api/30'), dumps(dict(text='not exist')))
-        assert response.code == 404, 'the status code should be 404 but it was %d' % response.code
+        assert_response_code(response, 404)
 
     def test_delete_method_to_destroy_a_resource(self):
         response = self.delete(self.get_url('/api/1'))
-        assert response.code == 200, 'the status code should be 200 but it was %d' % response.code
+        assert_response_code(response, 200)
         response = self.delete(self.get_url('/api/1'))
-        assert response.code == 404, 'the status code should be 404 but it was %d' % response.code
+        assert_response_code(response, 404)
 
     def test_return_resource_as_xml(self):
         url = self.get_url('/api/1')
         response = self._fetch(url, 'GET', headers=dict(Accept='text/xml'))
-        assert response.code == 200, 'the status code should be 200 but it was %d' % response.code
-        assert 'text/xml' in response.headers['Content-Type'], 'the content-type should be text/xml but it was %s' % response.headers['Content-Type']
+        assert_response_code(response, 200)
+        assert 'text/xml' in response.headers['Content-Type'], 'the content-type should be text/xml but it was {0}'.format(response.headers['Content-Type'])
         assert response.body == '<comment id="1">X</comment>'
 
     def test_choose_response_type_based_on_the_accept_header(self):
         url = self.get_url('/api/1')
         response = self._fetch(url, 'GET', headers={'Accept':'application/json, text/xml'})
-        assert response.code == 200, 'the status code should be 200 but it was %d' % response.code
-        assert 'application/json' in response.headers['Content-Type'], 'the content-type should be application/json but it was %s' % response.headers['Content-Type']
+        assert_response_code(response, 200)
+        assert 'application/json' in response.headers['Content-Type'], 'the content-type should be application/json but it was {0}'.format(response.headers['Content-Type'])
 
     def test_create_new_instance_of_the_resource_with_content_type_text_xml(self):
         a_new_item ='<comment>meu comentario</comment>'
         response = self._fetch(self.get_url('/api'), 'POST', headers={'Content-Type': 'text/xml'}, body=a_new_item)
-        assert response.code == 201, 'the status code should be 201 but it was %d' % response.code
+        assert_response_code(response, 201)
         # gets the new instance
         response = self._fetch(response.headers['Location'], 'GET', headers={'Accept': 'text/xml'})
-        assert 'text/xml' in response.headers['Content-Type'], 'the content-type should be text/xml but it was %s' % response.headers['Content-Type']
+        assert 'text/xml' in response.headers['Content-Type'], 'the content-type should be text/xml but it was {0}'.format(response.headers['Content-Type'])
         doc = ElementTree.fromstring(response.body)
-        assert doc.tag == 'comment', 'the tag should be "comment" but it was %s' % doc.tag
-        assert doc.text == 'meu comentario', 'the comment text should be "meu comentario" but it was %s' % doc.text
-        assert doc.get('id') == '10', 'the id should be 11 but it was %s' % doc.get('id')
+        assert doc.tag == 'comment', 'the tag should be "comment" but it was {0}'.format(doc.tag)
+        assert doc.text == 'meu comentario', 'the comment text should be "meu comentario" but it was {0}'.format(doc.text)
+        assert doc.get('id') == '10', 'the id should be 11 but it was {0}'.format(doc.get('id'))
 
     def test_get_resource_with_content_type_text_xml(self):
         response = self._fetch(self.get_url('/api/2'), 'GET', headers={'Accept': 'text/xml'})
-        assert 'text/xml' in response.headers['Content-Type'], 'the content-type should be text/xml but it was %s' % response.headers['Content-Type']
+        assert 'text/xml' in response.headers['Content-Type'], 'the content-type should be text/xml but it was {0}'.format(response.headers['Content-Type'])
         doc = ElementTree.fromstring(response.body)
-        assert doc.tag == 'comment', 'the tag should be "comment" but it was %s' % doc.tag
-        assert doc.text == 'XX', 'the comment text should be "XX" but it was %s' % doc.text
+        assert doc.tag == 'comment', 'the tag should be "comment" but it was {0}'.format(doc.tag)
+        assert doc.text == 'XX', 'the comment text should be "XX" but it was {0}'.format(doc.text)
 
     def test_update_new_instance_of_the_resource_with_content_type_text_xml(self):
         an_updated_item ='<comment id="2">meu comentario</comment>'
         response = self._fetch(self.get_url('/api/2'), 'PUT', headers={'Content-Type': 'text/xml'}, body=an_updated_item)
-        assert response.code == 204, 'the status code should be 204 but it was %d' % response.code
+        assert_response_code(response, 204)
         # get the resource to verify if was updated
         response = self._fetch(response.headers['Location'], 'GET', headers={'Accept': 'text/xml'})
-        assert 'text/xml' in response.headers['Content-Type'], 'the content-type should be text/xml but it was %s' % response.headers['Content-Type']
+        assert 'text/xml' in response.headers['Content-Type'], 'the content-type should be text/xml but it was {0}'.format(response.headers['Content-Type'])
         doc = ElementTree.fromstring(response.body)
-        assert doc.tag == 'comment', 'the tag should be "comment" but it was %s' % doc.tag
-        assert doc.text == 'meu comentario', 'the comment text should be "meu comentario" but it was %s' % doc.text
+        assert doc.tag == 'comment', 'the tag should be "comment" but it was {0}'.format(doc.tag)
+        assert doc.text == 'meu comentario', 'the comment text should be "meu comentario" but it was {0}'.format(doc.text)
 
     def test_jsonp_response_when_accept_textjavascript(self):
         response = self._fetch(
             self.get_url('/api/?callback=my_callback'), 'GET', headers={
                 'Accept': 'text/javascript'
             })
-        assert response.code == 200, \
-                'the status code should be 200 but it was %d' % response.code
+        assert_response_code(response, 200)
         assert response.body.startswith('my_callback(')
 
     def test_use_the_default_encoder(self):
@@ -214,8 +213,7 @@ class BaseApiHandlerTestCase(AsyncHTTPTestCase, AsyncHTTPClientMixin):
             self.get_url('/api/?callback=my_callback'), 'GET', headers={
                 'Accept': 'lol/cat'
             })
-        assert response.code == 200, \
-                'the status code should be 200 but it was %d' % response.code
+        assert_response_code(response, 200)
 
     def test_show_content_as_html_when_requested_by_browser(self):
         CHROME_ACCEPT_HEADER = 'text/html,application/xhtml+xml,application/xm'\
@@ -224,45 +222,44 @@ class BaseApiHandlerTestCase(AsyncHTTPTestCase, AsyncHTTPClientMixin):
             self.get_url('/api/'), 'GET', headers={
                 'Accept': CHROME_ACCEPT_HEADER
             })
-        assert response.code == 200, \
-                'the status code should be 200 but it was %d' % response.code
+        assert_response_code(response, 200)
         assert '<body>' in response.body
 
     def test_should_return_type_json_as_specified_in_url(self):
         response = self.get('/api/1.json')
-        assert response.code == 200, \
-                'the status code should be 200 but it was %d' % response.code
+        assert_response_code(response, 200)
         data = loads(response.body)
         assert 'id' in data
 
     def test_should_return_type_xml_as_specified_in_url(self):
         response = self.get('/api/1.xml')
-        assert response.code == 200, \
-                'the status code should be 200 but it was %d' % response.code
+        assert_response_code(response, 200)
         assert '</comment>' in response.body
 
     def test_should_raise_404_when_extension_is_not_found(self):
         response = self.get('/api/1.rb')
-        assert response.code == 404, \
-                'the status code should be 404 but it was %d' % response.code
+        assert_response_code(response, 404)
 
     def test_should_return_type_json_as_specified_in_url(self):
         response = self.get('/api/1.js?callback=myCallbackFooBar')
-        assert response.code == 200, \
-                'the status code should be 200 but it was %d' % response.code
+        assert_response_code(response, 200)
         assert 'myCallbackFooBar(' in response.body
 
     def test_should_return_the_default_callback_when_i_not_specify_in_my_request(self):
         response = self.get('/api/1.js')
-        assert response.code == 200, \
-                'the status code should be 200 but it was %d' % response.code
+        assert_response_code(response, 200)
         assert re.match(r'^[\w_]+\(.*', response.body), response.body
 
     def test_should_return_the_default_callback_when_i_not_specify_in_my_request(self):
         response = self.get('/api/1.js')
-        assert response.code == 200, \
-                'the status code should be 200 but it was %d' % response.code
+        assert_response_code(response, 200)
         assert re.match(r'^defaultCallback\(.*', response.body), response.body
+
+
+def assert_response_code(response, expected_status_code):
+    assert response.code == expected_status_code, \
+            'the status code should be {0:d} but it was {1:d}'.format(
+                    expected_status_code, response.code)
 
 
 class WithDefaultCallbackHandler(ResourceHandler):
@@ -283,14 +280,12 @@ class JsonEncoderDefineAnDefaultCallbackTestCase(AsyncHTTPTestCase,\
 
     def test_should_return_the_default_callback_when_i_not_specify_in_my_request(self):
         response = self.get('/api/1.js')
-        assert response.code == 200, \
-                'the status code should be 200 but it was %d' % response.code
+        assert_response_code(response, 200)
         assert re.match(r'^thePersonalizedCallback\(.*', response.body), response.body
 
     def test_should_return_with_the_callback_name_i_choose(self):
         response = self.get('/api/1.js?callback=fooBar')
-        assert response.code == 200, \
-                'the status code should be 200 but it was %d' % response.code
+        assert_response_code(response, 200)
         assert 'fooBar(' in response.body
 
 
@@ -305,20 +300,20 @@ class ResourceHandlerWithoutImplementationTestCase(AsyncHTTPTestCase,\
 
     def test_try_to_create_a_resource(self):
         response = self.post(self.get_url('/api'), dumps(dict(text='nice')))
-        assert response.code == 404, 'the status code should be 404 but it was %d' % response.code
+        assert_response_code(response, 404)
 
     def test_try_to_list_resources(self):
         response = self.get('/api')
-        assert response.code == 404, 'the status code should be 404 but it was %d' % response.code
+        assert_response_code(response, 404)
 
     def test_try_to_get_instance(self):
         response = self.get('/api/1')
-        assert response.code == 404, 'the status code should be 404 but it was %d' % response.code
+        assert_response_code(response, 404)
 
     def test_try_to_update_a_resource(self):
         response = self.put(self.get_url('/api/1'), dumps(dict(text='nice')))
-        assert response.code == 404, 'the status code should be 404 but it was %d' % response.code
+        assert_response_code(response, 404)
 
     def test_try_to_delete_a_resource(self):
         response = self.delete(self.get_url('/api/1'))
-        assert response.code == 404, 'the status code should be 404 but it was %d' % response.code
+        assert_response_code(response, 404)
