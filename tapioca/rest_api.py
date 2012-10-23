@@ -18,8 +18,8 @@ class Metadata(object):
 
     def add(self, path, handler):
         resource = Resource(path)
-        basic_methods = self.get_basic_methods(handler)
-        if len(basic_methods) > 0:
+        basic_methods = list(self.get_basic_methods(handler))
+        if basic_methods:
             resource.add_path(
                     Path('/{0}'.format(path), methods=basic_methods))
             resource.add_path(
@@ -27,8 +27,8 @@ class Metadata(object):
                         params=[Param('type')],
                         methods=basic_methods))
 
-        instance_methods = self.get_instance_methods(handler)
-        if len(instance_methods) > 0:
+        instance_methods = list(self.get_instance_methods(handler))
+        if instance_methods:
             resource.add_path(
                     Path('/{0}/{{key}}'.format(path),
                         params=[Param('key')],
@@ -40,25 +40,23 @@ class Metadata(object):
         self.spec.add_resource(resource)
 
     def get_basic_methods(self, handler):
-        basic_methods = []
-        if self.is_overridden(handler.get_collection):
-            basic_methods.append(Method('GET'))
-        if self.is_overridden(handler.create_model):
-            basic_methods.append(Method('POST'))
-        return basic_methods
+        return self.introspect_methods(
+                GET=handler.get_collection,
+                POST=handler.create_model)
 
     def is_overridden(self, method):
         return not hasattr(method, 'original')
 
     def get_instance_methods(self, handler):
-        instance_modification_methods = []
-        if self.is_overridden(handler.get_model):
-            instance_modification_methods.append(Method('GET'))
-        if self.is_overridden(handler.update_model):
-            instance_modification_methods.append(Method('PUT'))
-        if self.is_overridden(handler.delete_model):
-            instance_modification_methods.append(Method('DELETE'))
-        return instance_modification_methods
+        return self.introspect_methods(
+                GET=handler.get_model,
+                PUT=handler.update_model,
+                DELETE=handler.delete_model)
+
+    def introspect_methods(self, **mapping):
+        for method_type, implementation in mapping.items():
+            if self.is_overridden(implementation):
+                yield Method(method_type, description=implementation.__doc__)
 
 
 class TornadoRESTful(object):

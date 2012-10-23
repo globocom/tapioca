@@ -24,29 +24,47 @@ class ExtractInfoFromAPITestCase(TestCase):
         self.api.add_resource('comments', ResourceWithDocumentation)
         my_api = self.api.get_spec()
         resource = my_api.resources[0]
+
         assert resource.name == 'comments'
-        assert len(resource.paths) > 0
-        assert resource.paths[0].name == '/comments'
-        assert resource.paths[0].methods[0].name == 'GET'
-        assert resource.paths[0].methods[1].name == 'POST'
-        assert resource.paths[1].name == '/comments.{type}'
-        assert len(resource.paths[1].params) == 1
-        assert resource.paths[1].params[0].name == 'type'
-        assert resource.paths[1].methods[0].name == 'GET'
-        assert resource.paths[1].methods[1].name == 'POST'
-        assert resource.paths[2].name == '/comments/{key}'
-        assert len(resource.paths[2].params) == 1
-        assert resource.paths[2].params[0].name == 'key'
-        assert resource.paths[2].methods[0].name == 'GET'
-        assert resource.paths[2].methods[1].name == 'PUT'
-        assert resource.paths[2].methods[2].name == 'DELETE'
-        assert resource.paths[3].name == '/comments/{key}.{type}'
-        assert len(resource.paths[3].params) == 2
-        assert resource.paths[3].params[0].name == 'key'
-        assert resource.paths[3].params[1].name == 'type'
-        assert resource.paths[3].methods[0].name == 'GET'
-        assert resource.paths[3].methods[1].name == 'PUT'
-        assert resource.paths[3].methods[2].name == 'DELETE'
+        assert len(resource.paths) == 4
+
+        path_names = [p.name for p in resource.paths]
+
+        assert '/comments' in path_names
+        assert '/comments.{type}' in path_names
+        assert '/comments/{key}' in path_names
+        assert '/comments/{key}.{type}' in path_names
+
+        method_names = {}
+        param_names = {}
+        for path in resource.paths:
+            method_names[path.name] = [m.name for m in path.methods]
+            param_names[path.name] = [p.name for p in path.params]
+
+        assert len(method_names['/comments']) == 2
+        assert 'GET' in method_names['/comments']
+        assert 'POST' in method_names['/comments']
+
+        assert len(method_names['/comments.{type}']) == 2
+        assert 'GET' in method_names['/comments.{type}']
+        assert 'POST' in method_names['/comments.{type}']
+        assert len(list(param_names['/comments.{type}'])) == 1
+        assert 'type' in param_names['/comments.{type}']
+
+        assert len(method_names['/comments/{key}']) == 3
+        assert 'GET' in method_names['/comments/{key}']
+        assert 'PUT' in method_names['/comments/{key}']
+        assert 'DELETE' in method_names['/comments/{key}']
+        assert len(list(param_names['/comments/{key}'])) == 1
+        assert 'key' in param_names['/comments/{key}']
+
+        assert len(method_names['/comments/{key}.{type}']) == 3
+        assert 'GET' in method_names['/comments/{key}.{type}']
+        assert 'PUT' in method_names['/comments/{key}.{type}']
+        assert 'DELETE' in method_names['/comments/{key}.{type}']
+        assert len(list(param_names['/comments/{key}.{type}'])) == 2
+        assert 'type' in param_names['/comments/{key}.{type}']
+        assert 'key' in param_names['/comments/{key}.{type}']
 
     def test_spec_that_only_impl_get_collection(self):
 
