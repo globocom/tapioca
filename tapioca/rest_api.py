@@ -203,6 +203,7 @@ class ResourceHandler(tornado.web.RequestHandler):
 
     # Generic API HTTP Verbs
 
+    @tornado.web.asynchronous
     def get(self, key=None, force_return_type=None, *args, **kwargs):
         """ return the collection or a model """
         if key is None:
@@ -216,13 +217,16 @@ class ResourceHandler(tornado.web.RequestHandler):
             except ResourceDoesNotExist:
                 raise tornado.web.HTTPError(404)
 
+    @tornado.web.asynchronous
     def post(self, *args, **kwargs):
         """ create a model """
         resource = self.create_model(self.load_data(), *args, **kwargs)
         self.set_status(201)
         self.set_header('Location', '{r.protocol}://{r.host}{r.path}/{id:d}'
                 .format(r=self.request, id=resource['id']))
+        self.finish()
 
+    @tornado.web.asynchronous
     def put(self, key=None, *args, **kwargs):
         """ update a model """
         try:
@@ -230,15 +234,18 @@ class ResourceHandler(tornado.web.RequestHandler):
             self.set_status(204)
             self.set_header('Location', '{r.protocol}://{r.host}{r.path}'
                 .format(r=self.request))
+            self.finish()
         except ResourceDoesNotExist:
             raise tornado.web.HTTPError(404)
 
+    @tornado.web.asynchronous
     def delete(self, key=None, *args):
         """ delete a model """
         try:
             self.delete_model(key, *args)
+            self.finish()
         except ResourceDoesNotExist:
-            self.set_status(404)
+            raise tornado.web.HTTPError(404)
 
     # Extension points
     @mark_as_original_method

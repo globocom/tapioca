@@ -190,7 +190,7 @@ class BaseApiHandlerTestCase(AsyncHTTPTestCase, AsyncHTTPClientMixin):
         an_updated_item ='<comment id="2">meu comentario</comment>'
         response = self._fetch(self.get_url('/api/2'), 'PUT', headers={'Content-Type': 'text/xml'}, body=an_updated_item)
         assert_response_code(response, 204)
-        # get the resource to verify if was updated
+        # get the resource to verify if it was updated
         response = self._fetch(response.headers['Location'], 'GET', headers={'Accept': 'text/xml'})
         assert 'text/xml' in response.headers['Content-Type'], 'the content-type should be text/xml but it was {0}'.format(response.headers['Content-Type'])
         doc = ElementTree.fromstring(response.body)
