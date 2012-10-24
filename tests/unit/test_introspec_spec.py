@@ -128,6 +128,7 @@ class ExtractInfoFromAPITestCase(TestCase):
 
         class HalfImplementedResource(ResourceHandler):
             def update_model(self, *args, **kwargs):
+                """Updates the resource."""
                 pass
 
         self.api = TornadoRESTful(
@@ -139,6 +140,7 @@ class ExtractInfoFromAPITestCase(TestCase):
         assert resource.paths[0].name == '/comments/{key}'
         assert len(resource.paths[0].methods) == 1
         assert resource.paths[0].methods[0].name == 'PUT'
+        assert resource.paths[0].methods[0].description == 'Updates the resource.'
         assert resource.paths[1].name == '/comments/{key}.{type}'
         assert len(resource.paths[1].methods) == 1
         assert resource.paths[1].methods[0].name == 'PUT'

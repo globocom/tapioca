@@ -10,6 +10,7 @@ class ProjectsHandler(ResourceHandler):
         callback([])
 
     def get_model(self, key, *args, **kwargs):
+        """Gets an model instance"""
         return {}
 
     def update_model(self, key, *args, **kwargs):

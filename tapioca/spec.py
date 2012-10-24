@@ -65,7 +65,14 @@ class APIError(SpecItem):
         self.code = code
 
 
-class SwaggerSpecification(SimpleVisitor):
+class DocumentationHelpers(object):
+
+    def slugify_method_with_path(self, method, path):
+        normalized = re.sub('[/\.{}]', '_', path)
+        return '{0}{1}'.format(method, normalized).lower()
+
+
+class SwaggerSpecification(SimpleVisitor, DocumentationHelpers):
 
     def __init__(self, spec):
         self.spec = spec
@@ -107,14 +114,10 @@ class SwaggerSpecification(SimpleVisitor):
             'operations': self.visit(node.methods)
         }
 
-    def slugify_method_name(self, name):
-        return re.sub('[/\.{}]', '_', name)
-
     def visit_method(self, node):
-        method_name = self.slugify_method_name(self.current_path)
         return {
             'httpMethod': node.name,
-            'nickname': '{0}{1}'.format(node.name, method_name).lower(),
+            'nickname': self.slugify_method_with_path(node.name, self.current_path),
             'parameters': self.visit(self.current_params),
             'errorResponses': [],
             'summary': '',
@@ -132,7 +135,7 @@ class SwaggerSpecification(SimpleVisitor):
         }
 
 
-class WADLSpecification(SimpleVisitor):
+class WADLSpecification(SimpleVisitor, DocumentationHelpers):
 
     def __init__(self, spec):
         self.spec = spec
@@ -154,13 +157,16 @@ class WADLSpecification(SimpleVisitor):
         self.visit(node.paths)
 
     def visit_path(self, node):
+        self.current_resource = node
         self.output.append('<resource path="{node.name}">'.format(node=node))
         self.visit(node.params)
         self.visit(node.methods)
         self.output.append('</resource>')
 
     def visit_method(self, node):
-        self.output.append('<method name="{node.name}">'.format(node=node))
+        self.output.append('<method id="{slug}" name="{node.name}">'.format(node=node, slug=self.slugify_method_with_path(node.name, self.current_resource.name)))
+        if node.description:
+            self.output.append('<doc><![CDATA[{}]]></doc>'.format(node.description))
         self.output.append('</method>')
 
     def visit_param(self, node):
