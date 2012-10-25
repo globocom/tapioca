@@ -2,11 +2,11 @@ language: python
 
 python:
     - "2.7"
-    - "3.2"
+    #- "3.2"
     - "pypy"
 
 install:
-    - pip install -r ci_requirements.txt --use-mirrors
+    - pip install -r requirements.txt --use-mirrors
 
 script:
     - make test

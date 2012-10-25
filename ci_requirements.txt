@@ -1,3 +1,0 @@
-nose==1.2.1
-python-mimeparse==0.1.4
-tornado==2.4
