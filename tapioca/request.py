@@ -3,6 +3,10 @@ from schema import Schema
 
 class RequestSchema(object):
 
+    def __init__(self, **defs):
+        if defs:
+            self.__dict__.update(defs)
+
     @property
     def describe_url(self):
         return self.descriptions('url')

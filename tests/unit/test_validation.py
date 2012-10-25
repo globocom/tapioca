@@ -86,3 +86,8 @@ class RequestSchemaTestCase(TestCase):
         assert R().describe_querystring['name'] == 'The name of user'
         assert R().describe_querystring['age'] == 'The age of user'
         assert R().describe_querystring['year'] == ''
+
+    def test_schemas_in_constructor_of_request_schema(self):
+        r = RequestSchema(url={'param': Use(int)})
+        assert r.validate_url({'param': '123'}) == {'param': 123}
+        assert r.describe_url['param'] == ''
