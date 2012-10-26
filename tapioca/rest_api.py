@@ -77,13 +77,16 @@ class Metadata(object):
 
 class TornadoRESTful(object):
 
-    def __init__(self, version=None, base_url=None, discovery=False):
+    def __init__(self, version=None, base_url=None, discovery=False,
+            cross_origin_enabled=False):
         self.metadata = Metadata(version=version, base_url=base_url)
         self.handlers = []
         self.discovery = discovery
+        self.cross_origin_enabled = cross_origin_enabled
 
     def add_resource(self, path, handler, *args, **kw):
         normalized_path = path.rstrip('/').lstrip('/')
+        handler.cross_origin_enabled = self.cross_origin_enabled
         self.add_url_mapping(normalized_path, handler)
         self.metadata.add(normalized_path, handler)
 
@@ -200,6 +203,9 @@ class ResourceHandler(tornado.web.RequestHandler):
             respond_as = self.get_content_type_based_on('Accept')
         else:
             respond_as = self.get_content_type_for_extension(force_type)
+
+        if hasattr(self, 'cross_origin_enabled') and self.cross_origin_enabled:
+            self.set_header('Access-Control-Allow-Origin', '*')
 
         self.set_header('Content-Type', respond_as)
         self.write(self.get_encoder_for(respond_as).encode(data))

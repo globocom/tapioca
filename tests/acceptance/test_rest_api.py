@@ -264,7 +264,7 @@ class JsonEncoderDefineAnDefaultCallbackTestCase(AsyncHTTPTestCase,\
         AsyncHTTPClientMixin):
 
     def get_app(self):
-        api = TornadoRESTful()
+        api = TornadoRESTful(cross_origin_enabled=True)
         api.add_resource('api', WithDefaultCallbackHandler)
         application = tornado.web.Application(api.get_url_mapping())
         return application
@@ -278,6 +278,12 @@ class JsonEncoderDefineAnDefaultCallbackTestCase(AsyncHTTPTestCase,\
         response = self.get('/api/1.js?callback=fooBar')
         assert_response_code(response, 200)
         assert response.body.decode('utf-8').startswith('fooBar(')
+
+    def test_should_return_cross_origin_header(self):
+        response = self.get('/api/1.js?callback=fooBar')
+        assert_response_code(response, 200)
+        assert 'Access-Control-Allow-Origin' in response.headers
+        assert response.headers['Access-Control-Allow-Origin'] == '*'
 
 
 class ResourceHandlerWithoutImplementationTestCase(AsyncHTTPTestCase,\
