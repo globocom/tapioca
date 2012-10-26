@@ -115,7 +115,7 @@ class ValidateDecorator(object):
             for key in self.request_schema.describe_querystring:
                 value = self.handler.get_argument(key, default=None)
                 if value != None:
-                    request_values[key] = self.handler.get_argument(key)
+                    request_values[key] = value
             parsed_values = self.request_schema.validate_querystring(
                     request_values)
             self.handler.values['querystring'] = parsed_values
