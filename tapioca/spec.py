@@ -120,7 +120,7 @@ class SwaggerSpecification(SimpleVisitor, DocumentationHelpers):
         return {
             'httpMethod': node.name,
             'nickname': self.slugify_method_with_path(node.name, self.current_path),
-            'parameters': self.visit(self.current_params),
+            'parameters': self.visit((self.current_params or []) + (node.params or [])),
             'errorResponses': [],
             'summary': '',
             'notes': '',
