@@ -4,7 +4,7 @@ from unittest import TestCase
 from schema import SchemaError, Use, And
 
 from tapioca.request import RequestSchema, SchemaNotDefined, \
-        InvalidSchemaDefinition
+        InvalidSchemaDefinition, validate
 
 
 class RequestSchemaTestCase(TestCase):
@@ -91,3 +91,64 @@ class RequestSchemaTestCase(TestCase):
         r = RequestSchema(url={'param': Use(int)})
         assert r.validate_url({'param': '123'}) == {'param': 123}
         assert r.describe_url['param'] == ''
+
+
+class ValidationDecoratorTestCase(TestCase):
+
+    def test_has_values_attribute(self):
+
+        class FakeHandler(object):
+
+            @validate(url={})
+            def get(self, argument):
+                return self
+
+        assert FakeHandler().get(None).values == {}
+
+    def test_validate_arguments_in_url(self):
+
+        class FakeHandler(object):
+
+            @validate(url={'key': Use(int)})
+            def get(self, key=None):
+                return self
+
+        assert FakeHandler().get(key='10').values['url'].get('key') == 10
+
+    def test_validate_querystring_params(self):
+
+        querystring = {
+            'name': 'rafael caricio',
+            'age': '26',
+            'undefined_param': 'hello'
+        }
+
+        class FakeHandler(object):
+
+            def get_argument(self, name):
+                return querystring.get(name)
+
+            @validate(querystring={'name': str, 'age': Use(int)})
+            def get(self):
+                return self
+
+        assert FakeHandler().get().values['querystring'] == {
+            'name': 'rafael caricio',
+            'age': 26
+        }
+
+    def test_validate_body(self):
+
+        class FakeRequest(object):
+            body = '{"nome": 1}'
+
+        class FakeHandler(object):
+
+            def __init__(self):
+                self.request = FakeRequest()
+
+            @validate(body=And(Use(json.loads), {unicode: Use(int)}))
+            def post(self):
+                return self
+
+        assert FakeHandler().post().values['body'] == {'nome': 1}

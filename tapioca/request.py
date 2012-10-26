@@ -1,3 +1,5 @@
+import functools
+
 from schema import Schema
 
 
@@ -73,3 +75,28 @@ class SchemaNotDefined(Exception):
 class InvalidSchemaDefinition(Exception):
     pass
 
+
+def validate(**validation_schema):
+    def add_validation(func):
+        func.request_schema = RequestSchema(**validation_schema)
+        @functools.wraps(func)
+        def wrapper(self, *args, **url_params):
+            self.values = {}
+
+            if url_params:
+                self.values['url'] = func.request_schema.validate_url(url_params)
+
+            try:
+                request_values = {}
+                for key in func.request_schema.describe_querystring:
+                    request_values[key] = self.get_argument(key)
+                self.values['querystring'] = func.request_schema.validate_querystring(request_values)
+            except SchemaNotDefined:
+                pass
+
+            if hasattr(func.request_schema, 'body'):
+                self.values['body'] = func.request_schema.validate_body(self.request.body)
+
+            return func(self, *args, **url_params)
+        return wrapper
+    return add_validation
