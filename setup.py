@@ -4,7 +4,7 @@
 from glob import glob
 from setuptools import setup
 
-__version__ = '0.1.12'
+__version__ = '0.1.13'
 
 
 setup(
@@ -38,6 +38,7 @@ setup(
     ])],
     install_requires=[
       "tornado>=2.4",
-      "mimeparse>=0.1.3"
+      "python-mimeparse>=0.1.4",
+      "schema>=0.1.1"
     ]
 )
