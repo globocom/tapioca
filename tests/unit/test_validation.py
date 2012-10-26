@@ -1,7 +1,7 @@
 import json
 from unittest import TestCase
 
-from schema import SchemaError, Use, And
+from schema import SchemaError, Use, And, Optional
 
 from tapioca.request import RequestSchema, SchemaNotDefined, \
         InvalidSchemaDefinition, validate
@@ -77,7 +77,7 @@ class RequestSchemaTestCase(TestCase):
         class R(RequestSchema):
             querystring = {
                 'name': (And(str, Use(lambda v:v.lower())), 'The name of user'),
-                'age': (Use(int), 'The age of user'),
+                Optional('age'): (Use(int), 'The age of user'),
                 'year': And(int, lambda v: 1900 < v < 2012)
             }
 

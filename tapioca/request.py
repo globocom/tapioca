@@ -80,32 +80,51 @@ class InvalidSchemaDefinition(Exception):
     pass
 
 
-def validate(**validation_schema):
-    def add_validation(func):
-        func.request_schema = RequestSchema(**validation_schema)
+class ValidateDecorator(object):
+
+    def __init__(self, **validation_schema):
+        self.request_schema = RequestSchema(**validation_schema)
+        self.handler = None
+
+    def __call__(self, func):
+        func.request_schema = self.request_schema
+
         @functools.wraps(func)
-        def wrapper(self, *args, **url_params):
-            self.values = {}
+        def wrapper(handler, *args, **url_params):
+            self.handler = handler
+            self.handler.values = {}
 
             try:
-                if url_params:
-                    self.values['url'] = func.request_schema.validate_url(url_params)
-
-                try:
-                    request_values = {}
-                    for key in func.request_schema.describe_querystring:
-                        value = self.get_argument(key, default=None)
-                        if value != None:
-                            request_values[key] = self.get_argument(key)
-                    self.values['querystring'] = func.request_schema.validate_querystring(request_values)
-                except SchemaNotDefined:
-                    pass
-
-                if hasattr(func.request_schema, 'body'):
-                    self.values['body'] = func.request_schema.validate_body(self.request.body)
+                self.process_params_in_url(url_params)
+                self.process_params_in_querystring()
+                self.process_body()
             except SchemaError:
                 raise tornado.web.HTTPError(400)
 
-            return func(self, *args, **url_params)
+            return func(handler, *args, **url_params)
         return wrapper
-    return add_validation
+
+    def process_params_in_url(self, url_params):
+        if url_params:
+            parsed_values = self.request_schema.validate_url(url_params)
+            self.handler.values['url'] = parsed_values
+
+    def process_params_in_querystring(self):
+        if hasattr(self.request_schema, 'querystring'):
+            request_values = {}
+            for key in self.request_schema.describe_querystring:
+                value = self.handler.get_argument(key, default=None)
+                if value != None:
+                    request_values[key] = self.handler.get_argument(key)
+            parsed_values = self.request_schema.validate_querystring(
+                    request_values)
+            self.handler.values['querystring'] = parsed_values
+
+    def process_body(self):
+        if hasattr(self.request_schema, 'body'):
+            parsed_values = self.request_schema.validate_body(
+                    self.handler.request.body)
+            self.handler.values['body'] = parsed_values
+
+
+validate = ValidateDecorator
