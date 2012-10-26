@@ -125,7 +125,7 @@ class ValidationDecoratorTestCase(TestCase):
 
         class FakeHandler(object):
 
-            def get_argument(self, name):
+            def get_argument(self, name, default=None):
                 return querystring.get(name)
 
             @validate(querystring={'name': str, 'age': Use(int)})

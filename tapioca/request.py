@@ -1,6 +1,7 @@
 import functools
 
-from schema import Schema
+import tornado.web
+from schema import Schema, Optional, SchemaError
 
 
 class RequestSchema(object):
@@ -55,9 +56,12 @@ class RequestSchema(object):
         patterns = {}
         descriptions = {}
         for key, rule in attr.items():
-            descriptions[key] = ''
+            key_name = key
+            if isinstance(key, Optional):
+                key_name = key._schema
+            descriptions[key_name] = ''
             if isinstance(rule, tuple):
-                rule, descriptions[key] = rule
+                rule, descriptions[key_name] = rule
             patterns[key] = rule
         return patterns, descriptions
 
@@ -83,19 +87,24 @@ def validate(**validation_schema):
         def wrapper(self, *args, **url_params):
             self.values = {}
 
-            if url_params:
-                self.values['url'] = func.request_schema.validate_url(url_params)
-
             try:
-                request_values = {}
-                for key in func.request_schema.describe_querystring:
-                    request_values[key] = self.get_argument(key)
-                self.values['querystring'] = func.request_schema.validate_querystring(request_values)
-            except SchemaNotDefined:
-                pass
+                if url_params:
+                    self.values['url'] = func.request_schema.validate_url(url_params)
 
-            if hasattr(func.request_schema, 'body'):
-                self.values['body'] = func.request_schema.validate_body(self.request.body)
+                try:
+                    request_values = {}
+                    for key in func.request_schema.describe_querystring:
+                        value = self.get_argument(key, default=None)
+                        if value != None:
+                            request_values[key] = self.get_argument(key)
+                    self.values['querystring'] = func.request_schema.validate_querystring(request_values)
+                except SchemaNotDefined:
+                    pass
+
+                if hasattr(func.request_schema, 'body'):
+                    self.values['body'] = func.request_schema.validate_body(self.request.body)
+            except SchemaError:
+                raise tornado.web.HTTPError(400)
 
             return func(self, *args, **url_params)
         return wrapper

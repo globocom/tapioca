@@ -10,7 +10,7 @@ from tornado.testing import AsyncHTTPTestCase
 from tapioca import TornadoRESTful, ResourceHandler, \
         ResourceDoesNotExist, JsonEncoder, JsonpEncoder, HtmlEncoder
 
-from tests.support import AsyncHTTPClientMixin
+from tests.support import AsyncHTTPClientMixin, assert_response_code
 
 
 FAKE_DATABASE = None
@@ -251,12 +251,6 @@ class BaseApiHandlerTestCase(AsyncHTTPTestCase, AsyncHTTPClientMixin):
         response = self.get('/api/1.js')
         assert_response_code(response, 200)
         assert re.match(b'^defaultCallback\(.*', response.body), response.body.decode('utf-8')
-
-
-def assert_response_code(response, expected_status_code):
-    assert response.code == expected_status_code, \
-            'the status code should be {0:d} but it was {1:d}'.format(
-                    expected_status_code, response.code)
 
 
 class WithDefaultCallbackHandler(ResourceHandler):
