@@ -24,18 +24,21 @@ class Metadata(object):
                     Path('/{0}'.format(path), methods=basic_methods))
             resource.add_path(
                     Path('/{0}.{{type}}'.format(path),
-                        params=[Param('type')],
+                        params=[Param('type', style='url')],
                         methods=basic_methods))
 
         instance_methods = list(self.get_instance_methods(handler))
         if instance_methods:
             resource.add_path(
                     Path('/{0}/{{key}}'.format(path),
-                        params=[Param('key')],
+                        params=[Param('key', style='url')],
                         methods=instance_methods))
             resource.add_path(
                     Path('/{0}/{{key}}.{{type}}'.format(path),
-                        params=[Param('key'), Param('type')],
+                        params=[
+                            Param('key', style='url'),
+                            Param('type', style='url')
+                        ],
                         methods=instance_methods))
         self.spec.add_resource(resource)
 
@@ -56,7 +59,20 @@ class Metadata(object):
     def introspect_methods(self, **mapping):
         for method_type, implementation in mapping.items():
             if self.is_overridden(implementation):
-                yield Method(method_type, description=implementation.__doc__)
+                params = self.introspect_params(implementation)
+                yield Method(method_type,
+                        params=params, description=implementation.__doc__)
+
+    def introspect_params(self, method):
+        params = []
+        if hasattr(method, 'request_schema'):
+            request_schema = method.request_schema
+            if hasattr(request_schema, 'querystring'):
+                for name, description in \
+                        request_schema.describe_querystring.items():
+                    params.append(Param(
+                        name, style='querystring', description=description))
+        return params
 
 
 class TornadoRESTful(object):

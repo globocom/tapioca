@@ -45,18 +45,20 @@ class Resource(NamedItem):
 
 
 class Param(NamedItem):
-    def __init__(self, name=None, default_value=None, required=True,
+    def __init__(self, name=None, default_value=None, style=None, required=True,
             options=[], *args, **kwargs):
         super(Param, self).__init__(name, *args, **kwargs)
         self.default_value = default_value
+        self.style = style
         self.required = required
         self.options = options
 
 
 class Method(NamedItem):
-    def __init__(self, name=None, errors=[], *args, **kwargs):
+    def __init__(self, name=None, errors=[], params=None, *args, **kwargs):
         super(Method, self).__init__(name, *args, **kwargs)
         self.errors = errors
+        self.params = params
 
 
 class APIError(SpecItem):
@@ -126,13 +128,19 @@ class SwaggerSpecification(SimpleVisitor, DocumentationHelpers):
 
     def visit_param(self, node):
         return {
-            'paramType': 'path',
+            'paramType': self.get_param_type(node.style),
             'name': node.name,
-            'description': '',
+            'description': node.description or '',
             'dataType': 'String',
             'required': node.required,
             'allowMultiple': False,
         }
+
+    def get_param_type(self, desc):
+        if desc == 'querystring':
+            return 'query'
+        else:
+            return 'path'
 
 
 class WADLSpecification(SimpleVisitor, DocumentationHelpers):

@@ -6,7 +6,7 @@ from tornado.testing import AsyncHTTPTestCase
 
 from tests.support import AsyncHTTPClientMixin, assert_response_code
 
-from tapioca import TornadoRESTful, ResourceHandler, RequestSchema, validate
+from tapioca import TornadoRESTful, ResourceHandler, validate
 
 
 class ProjectsResource(ResourceHandler):
