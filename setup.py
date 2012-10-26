@@ -4,7 +4,7 @@
 from glob import glob
 from setuptools import setup
 
-__version__ = '0.1.13'
+__version__ = '0.1.14'
 
 
 setup(
