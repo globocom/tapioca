@@ -24,7 +24,52 @@ as both the documentation and testing interface by your API clients.
 Usage
 -----
 
-...
+Here is a "Hello, world!" example API written using Tapioca:
+
+```python
+
+import tornado.ioloop
+import tornado.web
+
+from tapioca import TornadoRESTful, ResourceHandler, validate
+
+class HelloResource(ResourceHandler):
+
+    @validate(querystring={'name': unicode})
+    def get_collection(self, callback):
+        callback("Hello, world {name}!".format(self.values['querystring']))
+
+api = TornadoRESTful(discovery=True)
+api.add_resource('hello', HelloResource)
+application = tornado.web.Application(
+    api.get_url_mapping()
+)
+
+if __name__ == "__main__":
+    application.listen(8888)
+    tornado.ioloop.IOLoop.instance().start()
+
+```
+
+With the code above you running you can access the hello route of your
+application.
+
+```bash
+$ curl -XGET -v -H "Accept: application/json" http://127.0.0.1:8888/hello
+$ curl -XGET -v -H "Accept: text/javascript" http://127.0.0.1:8888/hello
+$ curl -XGET -v -H "Accept: text/html" http://127.0.0.1:8888/hello
+```
+
+Or you can use extensions to force different content types.
+
+```bash
+$ curl -XGET -v http://127.0.0.1:8888/hello.json
+$ curl -XGET -v http://127.0.0.1:8888/hello.js
+$ curl -XGET -v http://127.0.0.1:8888/hello.html
+```
+
+Those are the default content types which Tapioca gives you.
+
 
 Extending
 ---------
