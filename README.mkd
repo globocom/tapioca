@@ -31,13 +31,12 @@ Here is a "Hello, world!" example API written using Tapioca:
 import tornado.ioloop
 import tornado.web
 
-from tapioca import TornadoRESTful, ResourceHandler, validate
+from tapioca import TornadoRESTful, ResourceHandler
 
 class HelloResource(ResourceHandler):
 
-    @validate(querystring={'name': unicode})
     def get_collection(self, callback):
-        callback("Hello, world {name}!".format(self.values['querystring']))
+        callback("Hello, world!")
 
 api = TornadoRESTful(discovery=True)
 api.add_resource('hello', HelloResource)
