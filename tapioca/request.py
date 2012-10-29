@@ -33,6 +33,10 @@ class RequestSchema(object):
         pattern, _ = self.process_body()
         return Schema(pattern).validate(value)
 
+    def querystring_optionals(self):
+        _, _, optionals = self.process_definition('querystring')
+        return optionals
+
     def process_body(self):
         attr = self.get_definition_attr('body')
         pattern = attr
@@ -42,11 +46,11 @@ class RequestSchema(object):
         return pattern, description
 
     def descriptions(self, attr_name):
-        _, descriptions = self.process_definition(attr_name)
+        _, descriptions, _ = self.process_definition(attr_name)
         return descriptions
 
     def validate(self, attr_name, value):
-        patterns, _ = self.process_definition(attr_name)
+        patterns, _, _ = self.process_definition(attr_name)
         return Schema(patterns).validate(value)
 
     def process_definition(self, attr_name):
@@ -55,15 +59,17 @@ class RequestSchema(object):
             raise InvalidSchemaDefinition('Schema definition need to be a dict')
         patterns = {}
         descriptions = {}
+        optionals = []
         for key, rule in attr.items():
             key_name = key
             if isinstance(key, Optional):
                 key_name = key._schema
+                optionals.append(key_name)
             descriptions[key_name] = ''
             if isinstance(rule, tuple):
                 rule, descriptions[key_name] = rule
             patterns[key] = rule
-        return patterns, descriptions
+        return patterns, descriptions, optionals
 
     def get_definition_attr(self, attr_name):
         if not hasattr(self, attr_name):

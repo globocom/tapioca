@@ -1,5 +1,6 @@
 from unittest import TestCase
 
+from schema import Optional
 from tapioca import TornadoRESTful, ResourceHandler, validate
 from tapioca.spec import *
 
@@ -184,3 +185,19 @@ class ExtractInfoFromAPITestCase(TestCase):
         assert param.name == 'host'
         assert param.description == ''
         assert param.style == 'querystring'
+
+    def test_spec_with_optional_param(self):
+
+        class HalfImplementedResource(ResourceHandler):
+
+            @validate(querystring={Optional('host'): unicode})
+            def get_collection(self, *args, **kwargs):
+                pass
+
+        self.api = TornadoRESTful(
+                version='v1', base_url='http://api.images.globo.com')
+        self.api.add_resource('comments', HalfImplementedResource)
+        my_api = self.api.get_spec()
+        resource = my_api.resources[0]
+        param = resource.paths[0].methods[0].params[0]
+        assert param.required == False
