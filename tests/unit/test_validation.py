@@ -152,3 +152,21 @@ class ValidationDecoratorTestCase(TestCase):
                 return self
 
         assert FakeHandler().post().values['body'] == {'nome': 1}
+
+    def test_use_object_in_validate_decorator(self):
+
+        class ParamDefinition(RequestSchema):
+            querystring = {
+                'name': str
+            }
+
+        class FakeHandler(object):
+
+            def get_argument(self, name, **kw):
+                return 'foo'
+
+            @validate(ParamDefinition)
+            def get(self):
+                return self
+
+        assert FakeHandler().get().values['querystring']['name'] == 'foo'

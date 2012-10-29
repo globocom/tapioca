@@ -82,8 +82,11 @@ class InvalidSchemaDefinition(Exception):
 
 class ValidateDecorator(object):
 
-    def __init__(self, **validation_schema):
-        self.request_schema = RequestSchema(**validation_schema)
+    def __init__(self, validation_object=None, **validation_schema):
+        if validation_object:
+            self.request_schema = validation_object()
+        else:
+            self.request_schema = RequestSchema(**validation_schema)
         self.handler = None
 
     def __call__(self, func):
