@@ -15,3 +15,14 @@ class JsonEncoderTestCase(TestCase):
         result = encoder.encode({'my_dict': {'another_dict': 1}})
         assert 'myDict' in result
         assert 'anotherDict' in result
+
+    def test_decode_dict_keys_from_camelcase(self):
+        encoder = JsonEncoder(None)
+        result = encoder.decode('{"myAge": 25}')
+        assert 'my_age' in result
+
+    def test_decode_deep_keys_from_camelcase(self):
+        encoder = JsonEncoder(None)
+        result = encoder.decode('{"myAge":{"thisOneIsGood":true}}')
+        assert 'my_age' in result
+        assert 'this_one_is_good' in result['my_age']
