@@ -1,3 +1,4 @@
+import re
 import json
 import logging
 
@@ -141,7 +142,22 @@ class JsonEncoder(Encoder):
     extension = 'json'
 
     def encode(self, data):
-        return json.dumps(data)
+
+        def camelize(data):
+            if isinstance(data, dict):
+                new_dict = {}
+                for key, value in data.items():
+                    to_upper = lambda match: match.group(1).upper()
+                    new_key = re.sub('_(.)', to_upper, key)
+                    new_dict[new_key] = camelize(value)
+                return new_dict
+            if isinstance(data, (list, tuple)):
+                for i in range(len(data)):
+                    data[i] = camelize(data[i])
+                return data
+            return data
+
+        return json.dumps(camelize(data))
 
     def decode(self, data):
         return json.loads(data)
