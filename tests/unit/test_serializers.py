@@ -1,3 +1,4 @@
+import datetime
 from unittest import TestCase
 
 from tapioca import JsonEncoder
@@ -26,3 +27,11 @@ class JsonEncoderTestCase(TestCase):
         result = encoder.decode('{"myAge":{"thisOneIsGood":true}}')
         assert 'my_age' in result
         assert 'this_one_is_good' in result['my_age']
+
+    def test_when_value_is_a_datetime_instance(self):
+        encoder = JsonEncoder(None)
+        as_string = '2012-10-31T14:12:12'
+        result = encoder.encode({'created_at': datetime.datetime.strptime(
+            as_string, '%Y-%m-%dT%H:%M:%S')})
+        assert as_string in result
+

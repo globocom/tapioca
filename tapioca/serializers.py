@@ -1,5 +1,6 @@
 import re
 import json
+import datetime
 
 from tapioca.spec import SwaggerSpecification, WADLSpecification
 
@@ -16,27 +17,29 @@ class JsonEncoder(Encoder):
 
     def encode(self, data):
         to_upper = lambda match: match.group(1).upper()
-        return json.dumps(self.pass_through_all_keys('_(.)', to_upper, data))
+        return json.dumps(self.pass_through_all_values('_(.)', to_upper, data))
 
     def decode(self, data):
         data = json.loads(data)
         to_lower = lambda match: \
                 '{0}_{1}'.format(match.group(1), match.group(2).lower())
-        return self.pass_through_all_keys('([a-z])([A-Z])', to_lower, data)
+        return self.pass_through_all_values('([a-z])([A-Z])', to_lower, data)
 
-    def pass_through_all_keys(self, pattern, function, data):
+    def pass_through_all_values(self, pattern, function, data):
         if isinstance(data, dict):
             new_dict = {}
             for key, value in data.items():
                 new_key = re.sub(pattern, function, key)
-                new_dict[new_key] = self.pass_through_all_keys(
+                new_dict[new_key] = self.pass_through_all_values(
                         pattern, function, value)
             return new_dict
         if isinstance(data, (list, tuple)):
             for i in range(len(data)):
-                data[i] = self.pass_through_all_keys(
+                data[i] = self.pass_through_all_values(
                         pattern, function, data[i])
             return data
+        if isinstance(data, datetime.datetime):
+            data = data.isoformat()
         return data
 
 
