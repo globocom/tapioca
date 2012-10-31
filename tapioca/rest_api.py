@@ -187,7 +187,7 @@ class ResourceHandler(tornado.web.RequestHandler):
         raise tornado.web.HTTPError(404)
 
     @mark_as_original_method
-    def delete_model(self, cid, callback, *args, **kwargs):
+    def delete_model(self, oid, callback, *args, **kwargs):
         """ delete a model """
         raise tornado.web.HTTPError(404)
 
