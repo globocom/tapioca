@@ -111,7 +111,7 @@ class ResourceHandler(tornado.web.RequestHandler):
 
     def load_data(self):
         content_type = self.get_content_type_based_on('Content-Type')
-        data_as_string = self.request.body.decode('utf-8')
+        data_as_string = self.request.body
         data = self.get_encoder_for(content_type).decode(data_as_string)
         return data
 
