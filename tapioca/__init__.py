@@ -1,3 +1,4 @@
-from tapioca.rest_api import *
+from tapioca.rest_api import TornadoRESTful, ResourceHandler, \
+        ResourceDoesNotExist
 from tapioca.serializers import Encoder, JsonEncoder, JsonpEncoder, HtmlEncoder
 from tapioca.request import RequestSchema, validate
