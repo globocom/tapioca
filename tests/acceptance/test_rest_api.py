@@ -54,27 +54,29 @@ class ImplementAllRequiredMethodsInApiHandler:
         else:
             raise ResourceDoesNotExist()
 
-    def create_model(self, model):
+    def create_model(self, model, callback):
         model['id'] = max([int(x['id']) for x in FAKE_DATABASE]) + 1
         FAKE_DATABASE.append(model)
         logging.debug('created {0!s}'.format(model))
-        return model
+        callback(model)
 
     def get_collection(self, callback):
         callback(FAKE_DATABASE)
 
-    def get_model(self, cid, *args):
-        return self._find(int(cid))
+    def get_model(self, cid, callback, *args):
+        callback(self._find(int(cid)))
 
-    def update_model(self, model, cid, *args):
+    def update_model(self, model, cid, callback, *args):
         model['id'] = int(cid)
         logging.debug('updating {0!s} {1!s}'.format(str(cid), str(model)))
         FAKE_DATABASE[FAKE_DATABASE.index(self._find(int(cid)))] = model
+        callback()
 
-    def delete_model(self, cid):
+    def delete_model(self, cid, callback):
         logging.debug('deleting')
         item = self._find(int(cid))
         FAKE_DATABASE.remove(item)
+        callback()
 
 
 class FullTestHandler(
@@ -256,8 +258,8 @@ class BaseApiHandlerTestCase(AsyncHTTPTestCase, AsyncHTTPClientMixin):
 class WithDefaultCallbackHandler(ResourceHandler):
     default_callback_name = 'thePersonalizedCallback'
 
-    def get_model(self, cid, *args):
-        return {}
+    def get_model(self, cid, callback, *args):
+        callback({})
 
 
 class JsonEncoderDefineAnDefaultCallbackTestCase(AsyncHTTPTestCase,\

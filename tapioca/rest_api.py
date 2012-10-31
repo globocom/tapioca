@@ -120,35 +120,37 @@ class ResourceHandler(tornado.web.RequestHandler):
     @tornado.web.asynchronous
     def get(self, key=None, force_return_type=None, *args, **kwargs):
         """ return the collection or a model """
+        def _callback(data):
+            self.respond_with(data, force_return_type)
+
         if key is None:
-            def _callback(data):
-                self.respond_with(data, force_return_type)
             self.get_collection(_callback, *args, **kwargs)
         else:
             try:
-                model = self.get_model(key, *args, **kwargs)
-                self.respond_with(model, force_return_type)
+                self.get_model(key, _callback, *args, **kwargs)
             except ResourceDoesNotExist:
                 raise tornado.web.HTTPError(404)
 
     @tornado.web.asynchronous
     def post(self, *args, **kwargs):
         """ create a model """
-        resource = self.create_model(self.load_data(), *args, **kwargs)
-        self.set_status(201)
-        self.set_header('Location', '{r.protocol}://{r.host}{r.path}/{id:d}'
-                .format(r=self.request, id=resource['id']))
-        self.finish()
+        def _callback(content=None, *args, **kwargs):
+            self.set_status(201)
+            self.set_header(
+                'Location', '{r.protocol}://{r.host}{r.path}/{id:d}'.format(
+                    r=self.request, id=content['id']))
+            self.finish()
+
+        self.create_model(self.load_data(), _callback, *args, **kwargs)
 
     @tornado.web.asynchronous
     def put(self, key=None, *args, **kwargs):
         """ update a model """
         try:
-            self.update_model(self.load_data(), key, *args, **kwargs)
             self.set_status(204)
             self.set_header('Location', '{r.protocol}://{r.host}{r.path}'
-                .format(r=self.request))
-            self.finish()
+                    .format(r=self.request))
+            self.update_model(self.load_data(), key, self.finish_callback, *args, **kwargs)
         except ResourceDoesNotExist:
             raise tornado.web.HTTPError(404)
 
@@ -156,14 +158,16 @@ class ResourceHandler(tornado.web.RequestHandler):
     def delete(self, key=None, *args):
         """ delete a model """
         try:
-            self.delete_model(key, *args)
-            self.finish()
+            self.delete_model(key, self.finish_callback, *args)
         except ResourceDoesNotExist:
             raise tornado.web.HTTPError(404)
 
+    def finish_callback(self, *args, **kw):
+        self.finish()
+
     # Extension points
     @mark_as_original_method
-    def create_model(self, model, *args, **kwargs):
+    def create_model(self, model, callback, *args, **kwargs):
         """ create model and return a dictionary of updated attributes """
         raise tornado.web.HTTPError(404)
 
@@ -173,17 +177,17 @@ class ResourceHandler(tornado.web.RequestHandler):
         raise tornado.web.HTTPError(404)
 
     @mark_as_original_method
-    def get_model(self, *args, **kwargs):
+    def get_model(self, oid, callback, *args, **kwargs):
         """ return a model, return None to indicate not found """
         raise tornado.web.HTTPError(404)
 
     @mark_as_original_method
-    def update_model(self, model, *args, **kwargs):
+    def update_model(self, model, oid, callback, *args, **kwargs):
         """ update a model """
         raise tornado.web.HTTPError(404)
 
     @mark_as_original_method
-    def delete_model(self, *args, **kwargs):
+    def delete_model(self, cid, callback, *args, **kwargs):
         """ delete a model """
         raise tornado.web.HTTPError(404)
 
