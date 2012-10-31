@@ -1,86 +1,15 @@
-import re
 import json
 import logging
 
 import tornado.web
 import mimeparse
 
-from tapioca.spec import APISpecification, Resource, Path, Method, Param, \
-                SwaggerSpecification, WADLSpecification
+from tapioca.serializers import JsonEncoder, JsonpEncoder, HtmlEncoder, \
+        SwaggerEncoder, WADLEncoder
+from tapioca.metadata import Metadata
 
 
 SIMPLE_POST_MIMETYPE = 'application/x-www-form-urlencoded'
-
-
-class Metadata(object):
-
-    def __init__(self, version=None, base_url=None):
-        self.spec = APISpecification(version=version, base_url=base_url)
-
-    def add(self, path, handler):
-        resource = Resource(path)
-        basic_methods = list(self.get_basic_methods(handler))
-        if basic_methods:
-            resource.add_path(
-                    Path('/{0}'.format(path), methods=basic_methods))
-            resource.add_path(
-                    Path('/{0}.{{type}}'.format(path),
-                        params=[Param('type', style='url')],
-                        methods=basic_methods))
-
-        instance_methods = list(self.get_instance_methods(handler))
-        if instance_methods:
-            resource.add_path(
-                    Path('/{0}/{{key}}'.format(path),
-                        params=[Param('key', style='url')],
-                        methods=instance_methods))
-            resource.add_path(
-                    Path('/{0}/{{key}}.{{type}}'.format(path),
-                        params=[
-                            Param('key', style='url'),
-                            Param('type', style='url')
-                        ],
-                        methods=instance_methods))
-        self.spec.add_resource(resource)
-
-    def get_basic_methods(self, handler):
-        return self.introspect_methods(
-                GET=handler.get_collection,
-                POST=handler.create_model)
-
-    def is_overridden(self, method):
-        return not hasattr(method, 'original')
-
-    def get_instance_methods(self, handler):
-        return self.introspect_methods(
-                GET=handler.get_model,
-                PUT=handler.update_model,
-                DELETE=handler.delete_model)
-
-    def introspect_methods(self, **mapping):
-        for method_type, implementation in mapping.items():
-            if self.is_overridden(implementation):
-                params = self.introspect_params(implementation)
-                yield Method(method_type,
-                        params=params, description=implementation.__doc__)
-
-    def introspect_params(self, method):
-        params = []
-        if hasattr(method, 'request_schema'):
-            request_schema = method.request_schema
-            if hasattr(request_schema, 'querystring'):
-                optionals = request_schema.querystring_optionals()
-                for name, description in \
-                        request_schema.describe_querystring.items():
-                    params.append(
-                        Param(
-                            name,
-                            required=(not name in optionals),
-                            style='querystring',
-                            description=description
-                        )
-                    )
-        return params
 
 
 class TornadoRESTful(object):
@@ -129,70 +58,6 @@ class ResourceDoesNotExist(Exception):
 def mark_as_original_method(method):
     method.original = True
     return method
-
-
-class Encoder(object):
-
-    def __init__(self, handler):
-        self.handler = handler
-
-
-class JsonEncoder(Encoder):
-    mimetype = 'application/json'
-    extension = 'json'
-
-    def encode(self, data):
-        to_upper = lambda match: match.group(1).upper()
-        return json.dumps(self.pass_through_all_keys('_(.)', to_upper, data))
-
-    def decode(self, data):
-        data = json.loads(data)
-        to_lower = lambda match: \
-                '{0}_{1}'.format(match.group(1), match.group(2).lower())
-        return self.pass_through_all_keys('([a-z])([A-Z])', to_lower, data)
-
-    def pass_through_all_keys(self, pattern, function, data):
-        if isinstance(data, dict):
-            new_dict = {}
-            for key, value in data.items():
-                new_key = re.sub(pattern, function, key)
-                new_dict[new_key] = self.pass_through_all_keys(
-                        pattern, function, value)
-            return new_dict
-        if isinstance(data, (list, tuple)):
-            for i in range(len(data)):
-                data[i] = self.pass_through_all_keys(
-                        pattern, function, data[i])
-            return data
-        return data
-
-
-class JsonpEncoder(JsonEncoder):
-    mimetype = 'text/javascript'
-    extension = 'js'
-    default_callback_name = 'defaultCallback'
-
-    def encode(self, data):
-        data = super(JsonpEncoder, self).encode(data)
-        callback_name = self.get_callback_name()
-        return "%s(%s);" % (callback_name, data)
-
-    def get_callback_name(self):
-        callback_name = self.default_callback_name
-        if hasattr(self.handler, 'default_callback_name'):
-            callback_name = self.handler.default_callback_name
-        return self.handler.get_argument('callback', default=callback_name)
-
-
-class HtmlEncoder(Encoder):
-    mimetype = 'text/html'
-    extension = 'html'
-
-    def encode(self, data):
-        pprint_data = json.dumps(data, sort_keys=True, indent=4)
-        return self.handler.render_string(
-                'templates/tapioca/resource.html',
-                    resource_content=pprint_data)
 
 
 class ResourceHandler(tornado.web.RequestHandler):
@@ -321,21 +186,6 @@ class ResourceHandler(tornado.web.RequestHandler):
     def delete_model(self, *args, **kwargs):
         """ delete a model """
         raise tornado.web.HTTPError(404)
-
-
-class SwaggerEncoder(JsonEncoder):
-    extension = 'swagger'
-
-    def encode(self, data):
-        return SwaggerSpecification(data['spec']).generate(data['resource'])
-
-class WADLEncoder(Encoder):
-    mimetype = 'application/xml'
-    extension = 'wadl'
-
-    def encode(self, data):
-        return WADLSpecification(data['spec']).generate()
-
 
 
 class DiscoveryHandler(ResourceHandler):
