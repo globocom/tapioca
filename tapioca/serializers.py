@@ -1,6 +1,5 @@
 import re
 import json
-import datetime
 
 from tapioca.spec import SwaggerSpecification, WADLSpecification
 
@@ -38,8 +37,6 @@ class JsonEncoder(Encoder):
                 data[i] = self.pass_through_all_values(
                         pattern, function, data[i])
             return data
-        if isinstance(data, datetime.datetime):
-            data = data.isoformat()
         return data
 
 
