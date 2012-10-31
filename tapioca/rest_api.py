@@ -110,6 +110,7 @@ class ResourceHandler(tornado.web.RequestHandler):
         raise tornado.web.HTTPError(404)
 
     def load_data(self):
+        """ load data based on Content-Type request header """
         content_type = self.get_content_type_based_on('Content-Type')
         data_as_string = self.request.body
         data = self.get_encoder_for(content_type).decode(data_as_string)
@@ -141,7 +142,7 @@ class ResourceHandler(tornado.web.RequestHandler):
                     r=self.request, id=content['id']))
             self.finish()
 
-        self.create_model(self.load_data(), _callback, *args, **kwargs)
+        self.create_model(_callback, *args, **kwargs)
 
     @tornado.web.asynchronous
     def put(self, key=None, *args, **kwargs):
@@ -150,7 +151,7 @@ class ResourceHandler(tornado.web.RequestHandler):
             self.set_status(204)
             self.set_header('Location', '{r.protocol}://{r.host}{r.path}'
                     .format(r=self.request))
-            self.update_model(self.load_data(), key, self.finish_callback, *args, **kwargs)
+            self.update_model(key, self.finish_callback, *args, **kwargs)
         except ResourceDoesNotExist:
             raise tornado.web.HTTPError(404)
 
@@ -167,7 +168,7 @@ class ResourceHandler(tornado.web.RequestHandler):
 
     # Extension points
     @mark_as_original_method
-    def create_model(self, model, callback, *args, **kwargs):
+    def create_model(self, callback, *args, **kwargs):
         """ create model and return a dictionary of updated attributes """
         raise tornado.web.HTTPError(404)
 
@@ -182,7 +183,7 @@ class ResourceHandler(tornado.web.RequestHandler):
         raise tornado.web.HTTPError(404)
 
     @mark_as_original_method
-    def update_model(self, model, oid, callback, *args, **kwargs):
+    def update_model(self, oid, callback, *args, **kwargs):
         """ update a model """
         raise tornado.web.HTTPError(404)
 

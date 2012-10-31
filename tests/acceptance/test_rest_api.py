@@ -54,7 +54,8 @@ class ImplementAllRequiredMethodsInApiHandler:
         else:
             raise ResourceDoesNotExist()
 
-    def create_model(self, model, callback):
+    def create_model(self, callback):
+        model = self.load_data()
         model['id'] = max([int(x['id']) for x in FAKE_DATABASE]) + 1
         FAKE_DATABASE.append(model)
         logging.debug('created {0!s}'.format(model))
@@ -66,7 +67,8 @@ class ImplementAllRequiredMethodsInApiHandler:
     def get_model(self, cid, callback, *args):
         callback(self._find(int(cid)))
 
-    def update_model(self, model, cid, callback, *args):
+    def update_model(self, cid, callback, *args):
+        model = self.load_data()
         model['id'] = int(cid)
         logging.debug('updating {0!s} {1!s}'.format(str(cid), str(model)))
         FAKE_DATABASE[FAKE_DATABASE.index(self._find(int(cid)))] = model
