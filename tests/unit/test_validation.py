@@ -100,6 +100,10 @@ class RequestSchemaTestCase(TestCase):
         r = RequestSchema(url={optional('param'): Use(int)})
         assert r.validate_url({}) == {}
 
+    def test_default_value_is_the_final_value_to_be_used(self):
+        r = RequestSchema(url={optional('param', 'blank'): Use(int)})
+        assert r.validate_url({}) == {'param': 'blank'}
+
 
 class ValidationDecoratorTestCase(TestCase):
 

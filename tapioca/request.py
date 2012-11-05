@@ -55,8 +55,9 @@ class RequestSchema(object):
         for key, default_value in optionals.items():
             if default_value != None:
                 final_values[key] = default_value
+        values = Schema(patterns).validate(values)
         final_values.update(values)
-        return Schema(patterns).validate(final_values)
+        return final_values
 
     def process_definition(self, attr_name):
         attr = self.get_definition_attr(attr_name)
