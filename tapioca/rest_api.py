@@ -96,12 +96,14 @@ class ResourceHandler(tornado.web.RequestHandler):
         else:
             respond_as = self.get_content_type_for_extension(force_type)
 
-        if hasattr(self, 'cross_origin_enabled') and self.cross_origin_enabled:
-            self.set_header('Access-Control-Allow-Origin', '*')
-
+        self.set_cross_origin()
         self.set_header('Content-Type', respond_as)
         self.write(self.get_encoder_for(respond_as).encode(data))
         self.finish()
+
+    def set_cross_origin(self):
+        if hasattr(self, 'cross_origin_enabled') and self.cross_origin_enabled:
+            self.set_header('Access-Control-Allow-Origin', '*')
 
     def get_content_type_for_extension(self, extension):
         for encoder in self.get_encoders():
@@ -137,6 +139,7 @@ class ResourceHandler(tornado.web.RequestHandler):
         """ create a model """
         def _callback(content=None, *args, **kwargs):
             self.set_status(201)
+            self.set_cross_origin()
             self.set_header(
                 'Location', '{r.protocol}://{r.host}{r.path}/{id:d}'.format(
                     r=self.request, id=content['id']))
@@ -148,10 +151,11 @@ class ResourceHandler(tornado.web.RequestHandler):
     def put(self, key=None, *args, **kwargs):
         """ update a model """
         try:
+            self.update_model(key, self.finish_callback, *args, **kwargs)
             self.set_status(204)
+            self.set_cross_origin()
             self.set_header('Location', '{r.protocol}://{r.host}{r.path}'
                     .format(r=self.request))
-            self.update_model(key, self.finish_callback, *args, **kwargs)
         except ResourceDoesNotExist:
             raise tornado.web.HTTPError(404)
 
@@ -160,6 +164,7 @@ class ResourceHandler(tornado.web.RequestHandler):
         """ delete a model """
         try:
             self.delete_model(key, self.finish_callback, *args)
+            self.set_cross_origin()
         except ResourceDoesNotExist:
             raise tornado.web.HTTPError(404)
 
