@@ -49,9 +49,14 @@ class RequestSchema(object):
         _, descriptions, _ = self.process_definition(attr_name)
         return descriptions
 
-    def validate(self, attr_name, value):
-        patterns, _, _ = self.process_definition(attr_name)
-        return Schema(patterns).validate(value)
+    def validate(self, attr_name, values):
+        patterns, _, optionals = self.process_definition(attr_name)
+        final_values = {}
+        for key, default_value in optionals.items():
+            if default_value != None:
+                final_values[key] = default_value
+        final_values.update(values)
+        return Schema(patterns).validate(final_values)
 
     def process_definition(self, attr_name):
         attr = self.get_definition_attr(attr_name)
@@ -59,12 +64,13 @@ class RequestSchema(object):
             raise InvalidSchemaDefinition('Schema definition need to be a dict')
         patterns = {}
         descriptions = {}
-        optionals = []
+        optionals = {}
         for key, rule in attr.items():
             key_name = key
-            if isinstance(key, Optional):
+            if isinstance(key, OptionalParameter):
                 key_name = key._schema
-                optionals.append(key_name)
+                optionals[key_name] = key.default_value
+                key = Optional(key._schema)
             descriptions[key_name] = ''
             if isinstance(rule, tuple):
                 rule, descriptions[key_name] = rule
@@ -136,4 +142,11 @@ class ValidateDecorator(object):
             self.handler.values['body'] = parsed_values
 
 
+class OptionalParameter(Optional):
+    def __init__(self, name, default_value=None):
+        Optional.__init__(self, name)
+        self.default_value = default_value
+
+
 validate = ValidateDecorator
+optional = OptionalParameter

@@ -1,7 +1,6 @@
 from unittest import TestCase
 
-from schema import Optional
-from tapioca import TornadoRESTful, ResourceHandler, validate
+from tapioca import TornadoRESTful, ResourceHandler, validate, optional
 from tapioca.spec import *
 
 from tests.support import ResourceWithDocumentation
@@ -190,7 +189,7 @@ class ExtractInfoFromAPITestCase(TestCase):
 
         class HalfImplementedResource(ResourceHandler):
 
-            @validate(querystring={Optional('host'): unicode})
+            @validate(querystring={optional('host'): unicode})
             def get_collection(self, *args, **kwargs):
                 pass
 

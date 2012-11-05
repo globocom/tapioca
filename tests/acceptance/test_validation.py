@@ -1,19 +1,19 @@
 from json import loads
 
 import tornado.web
-from schema import Use, Optional
+from schema import Use
 from tornado.testing import AsyncHTTPTestCase
 
 from tests.support import AsyncHTTPClientMixin, assert_response_code
 
-from tapioca import TornadoRESTful, ResourceHandler, validate
+from tapioca import TornadoRESTful, ResourceHandler, validate, optional
 
 
 class ProjectsResource(ResourceHandler):
 
     @validate(querystring={
-        Optional('name'): (unicode, 'The name of the project that do you want to search for'),
-        Optional('size'): (Use(int), 'The maximum number of projects you want')
+        optional('name'): (unicode, 'The name of the project that do you want to search for'),
+        optional('size'): (Use(int), 'The maximum number of projects you want')
     })
     def get_collection(self, callback):
         callback([self.values['querystring']])
@@ -41,4 +41,5 @@ class UseOfValidationTestCase(AsyncHTTPTestCase, AsyncHTTPClientMixin):
 
     def test_should_be_able_to_call_without_size(self):
         response = self.get('/projects.json?name=foobar')
+        print response.body
         assert_response_code(response, 200)

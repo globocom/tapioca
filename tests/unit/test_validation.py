@@ -1,10 +1,10 @@
 import json
 from unittest import TestCase
 
-from schema import SchemaError, Use, And, Optional
+from schema import SchemaError, Use, And
 
 from tapioca.request import RequestSchema, SchemaNotDefined, \
-        InvalidSchemaDefinition, validate
+        InvalidSchemaDefinition, validate, optional
 
 
 class RequestSchemaTestCase(TestCase):
@@ -77,7 +77,7 @@ class RequestSchemaTestCase(TestCase):
         class R(RequestSchema):
             querystring = {
                 'name': (And(str, Use(lambda v:v.lower())), 'The name of user'),
-                Optional('age'): (Use(int), 'The age of user'),
+                optional('age'): (Use(int), 'The age of user'),
                 'year': And(int, lambda v: 1900 < v < 2012)
             }
 
@@ -91,6 +91,14 @@ class RequestSchemaTestCase(TestCase):
         r = RequestSchema(url={'param': Use(int)})
         assert r.validate_url({'param': '123'}) == {'param': 123}
         assert r.describe_url['param'] == ''
+
+    def test_using_default_value_of_optional_param(self):
+        r = RequestSchema(url={optional('param', 1): Use(int)})
+        assert r.validate_url({}) == {'param': 1}
+
+    def test_optional_without_default_value(self):
+        r = RequestSchema(url={optional('param'): Use(int)})
+        assert r.validate_url({}) == {}
 
 
 class ValidationDecoratorTestCase(TestCase):
