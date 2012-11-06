@@ -58,15 +58,13 @@ class Metadata(object):
         if hasattr(method, 'request_schema'):
             request_schema = method.request_schema
             if hasattr(request_schema, 'querystring'):
-                optionals = request_schema.querystring_optionals()
-                for name, description in \
-                        request_schema.describe_querystring.items():
+                for param in request_schema.querystring_params():
                     params.append(
                         Param(
-                            name,
-                            required=(not name in optionals),
+                            param.name,
+                            required=not param.is_optional,
                             style='querystring',
-                            description=description
+                            description=param.description
                         )
                     )
         return params

@@ -3,37 +3,25 @@ from unittest import TestCase
 
 from schema import SchemaError, Use, And
 
-from tapioca.request import RequestSchema, SchemaNotDefined, \
+from tapioca.request import RequestSchema, \
         InvalidSchemaDefinition, validate, optional
 
 
 class RequestSchemaTestCase(TestCase):
-
-    def test_should_not_be_possible_to_validate_url(self):
-        r = RequestSchema()
-        self.assertRaises(SchemaNotDefined, r.validate_url, '')
-
-    def test_should_not_be_possible_to_validate_querystring(self):
-        r = RequestSchema()
-        self.assertRaises(SchemaNotDefined, r.validate_querystring, '')
-
-    def test_should_not_be_possible_to_validate_body(self):
-        r = RequestSchema()
-        self.assertRaises(SchemaNotDefined, r.validate_body, '')
 
     def test_url_should_be_a_dict(self):
 
         class R(RequestSchema):
             url = None
 
-        self.assertRaises(InvalidSchemaDefinition, R().validate_url, '')
+        self.assertRaises(InvalidSchemaDefinition, R)
 
     def test_params_should_be_a_dict(self):
 
         class R(RequestSchema):
             querystring = []
 
-        self.assertRaises(InvalidSchemaDefinition, R().validate_querystring, '')
+        self.assertRaises(InvalidSchemaDefinition, R)
 
     def test_validate_url_params_with_no_documentation(self):
 
@@ -43,7 +31,9 @@ class RequestSchemaTestCase(TestCase):
             }
 
         assert R().validate_url({'key': 1}) == {'key': 1}
-        assert R().describe_url['key'] == ''
+        params = R().url_params()
+        assert params[0].name == 'key'
+        assert params[0].description == ''
 
     def test_validate_url_params_with_documentation(self):
 
@@ -53,7 +43,9 @@ class RequestSchemaTestCase(TestCase):
             }
 
         assert R().validate_url({'key': 1}) == {'key': 1}
-        assert R().describe_url['key'] == 'This is an unique key'
+        params = R().url_params()
+        assert params[0].name == 'key'
+        assert params[0].description == 'This is an unique key'
 
     def test_body_schema_without_documentation(self):
 
@@ -83,14 +75,22 @@ class RequestSchemaTestCase(TestCase):
 
         assert R().validate_querystring({'name': 'Rafael', 'age': '26', 'year': 2010}) == {
                 'name': 'rafael', 'age': 26, 'year': 2010}
-        assert R().describe_querystring['name'] == 'The name of user'
-        assert R().describe_querystring['age'] == 'The age of user'
-        assert R().describe_querystring['year'] == ''
+        params = R().querystring_params()
+        assert len(params) == 3
+        for param in params:
+            if param.name == 'name':
+                assert param.description == 'The name of user'
+            elif param.name == 'age':
+                assert param.description == 'The age of user'
+            elif param.name == 'year':
+                assert param.description == ''
 
     def test_schemas_in_constructor_of_request_schema(self):
         r = RequestSchema(url={'param': Use(int)})
         assert r.validate_url({'param': '123'}) == {'param': 123}
-        assert r.describe_url['param'] == ''
+        params = r.url_params()
+        assert params[0].name == 'param'
+        assert params[0].description == ''
 
     def test_using_default_value_of_optional_param(self):
         r = RequestSchema(querystring={optional('param', 1): Use(int)})

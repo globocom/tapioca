@@ -10,88 +10,114 @@ class RequestSchema(object):
         if defs:
             self.__dict__.update(defs)
 
-    @property
-    def describe_url(self):
-        return self.descriptions('url')
+        self.querystring_processor = None
+        if hasattr(self, 'querystring'):
+            self.querystring_processor = QuerystringSchemaProcessor(
+                    self.querystring)
 
-    @property
-    def describe_querystring(self):
-        return self.descriptions('querystring')
+        self.url_processor = None
+        if hasattr(self, 'url'):
+            self.url_processor = UrlSchemaProcessor(self.url)
+
+    def validate_url(self, values):
+        return self.url_processor.validate(values)
+
+    def url_params(self):
+        return self.url_processor.params
+
+    def validate_querystring(self, values):
+        return self.querystring_processor.validate(values)
+
+    def querystring_params(self):
+        return self.querystring_processor.params
 
     @property
     def describe_body(self):
         _, description = self.process_body()
         return description
 
-    def validate_url(self, value):
-        return self.validate('url', value)
-
-    def validate_querystring(self, values):
-        patterns, _, optionals = self.process_definition('querystring')
-        final_values = {}
-        for key, default_value in optionals.items():
-            if default_value != None:
-                final_values[key] = default_value
-        values = Schema(patterns).validate(values)
-        final_values.update(values)
-        return final_values
-
     def validate_body(self, value):
         pattern, _ = self.process_body()
         return Schema(pattern).validate(value)
 
-    def querystring_optionals(self):
-        _, _, optionals = self.process_definition('querystring')
-        return optionals
-
     def process_body(self):
-        attr = self.get_definition_attr('body')
-        pattern = attr
+        pattern = self.body
         description = ''
-        if isinstance(attr, tuple):
-            pattern, description = attr
+        if isinstance(self.body, tuple):
+            pattern, description = self.body
         return pattern, description
 
-    def descriptions(self, attr_name):
-        _, descriptions, _ = self.process_definition(attr_name)
-        return descriptions
 
-    def validate(self, attr_name, values):
-        patterns, _, _ = self.process_definition(attr_name)
-        return Schema(patterns).validate(values)
+class ParamSchema(object):
+    def __init__(self, name, pattern, description, is_optional, default_value):
+        self.name = name
+        self.pattern = pattern
+        self.description = description
+        self.is_optional = is_optional
+        self.default_value = default_value
 
-    def process_definition(self, attr_name):
-        attr = self.get_definition_attr(attr_name)
-        if not isinstance(attr, dict):
+    def validate(self, values):
+        if not self.name in values:
+            if self.is_optional:
+                if self.default_value:
+                    return self.default_value
+            else:
+                raise SchemaError('required value not passed')
+        else:
+            value = values[self.name]
+            return Schema(self.pattern).validate(value)
+
+
+class ParamSchemaProcessor(object):
+    def __init__(self, definition):
+        self.params = []
+        self.definition = definition
+        self.process_definition()
+
+    def process_definition(self):
+        if not isinstance(self.definition, dict):
             raise InvalidSchemaDefinition('Schema definition need to be a dict')
-        patterns = {}
-        descriptions = {}
-        optionals = {}
-        for key, rule in attr.items():
+        for key, rule in self.definition.items():
+            default_value = None
+            is_optional = False
             key_name = key
             if isinstance(key, OptionalParameter):
                 key_name = key._schema
-                optionals[key_name] = key.default_value
-                key = Optional(key._schema)
-            descriptions[key_name] = ''
+                is_optional = True
+                default_value = key.default_value
+            description = ''
             if isinstance(rule, tuple):
-                rule, descriptions[key_name] = rule
-            patterns[key] = rule
-        return patterns, descriptions, optionals
+                rule, description = rule
+            self.params.append(ParamSchema(key_name, rule, description,
+                is_optional, default_value))
 
-    def get_definition_attr(self, attr_name):
-        if not hasattr(self, attr_name):
-            raise SchemaNotDefined('Is necessary to define a shema for {}'\
-                    .format(attr_name))
-        return getattr(self, attr_name)
+    def validate(self, real_values):
+        final_values = {}
+        for param in self.params:
+            result = param.validate(real_values)
+            if result:
+                final_values[param.name] = result
+        return final_values
 
 
-class SchemaNotDefined(Exception):
+class QuerystringSchemaProcessor(ParamSchemaProcessor):
+    pass
+
+
+class UrlSchemaProcessor(ParamSchemaProcessor):
     pass
 
 
 class InvalidSchemaDefinition(Exception):
     pass
+
+
+class InvalidParamError(Exception):
+    def __init__(self, invalid_param):
+        Exception.__init__(self)
+        self.invalid_param = invalid_param
+        self.message = 'The "{}" parameter value is not valid.'.format(
+                invalid_param)
 
 
 class ValidateDecorator(object):
@@ -117,6 +143,10 @@ class ValidateDecorator(object):
                 self.process_body()
             except SchemaError as error:
                 raise tornado.web.HTTPError(400)
+            except InvalidParamError as error:
+                handler.set_status(400)
+                handler.respond_with(self.format_error(error))
+                return
 
             return func(handler, *args, **url_params)
         return wrapper
@@ -129,10 +159,10 @@ class ValidateDecorator(object):
     def process_params_in_querystring(self):
         if hasattr(self.request_schema, 'querystring'):
             request_values = {}
-            for key in self.request_schema.describe_querystring:
-                value = self.handler.get_argument(key, default=None)
+            for param in self.request_schema.querystring_params():
+                value = self.handler.get_argument(param.name, default=None)
                 if value != None:
-                    request_values[key] = value
+                    request_values[param.name] = value
             parsed_values = self.request_schema.validate_querystring(
                     request_values)
             self.handler.values['querystring'] = parsed_values
@@ -142,6 +172,9 @@ class ValidateDecorator(object):
             parsed_values = self.request_schema.validate_body(
                     self.handler.request.body)
             self.handler.values['body'] = parsed_values
+
+    def format_error(self, error):
+        return {'error': error.message}
 
 
 class OptionalParameter(Optional):
