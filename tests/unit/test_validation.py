@@ -93,16 +93,16 @@ class RequestSchemaTestCase(TestCase):
         assert r.describe_url['param'] == ''
 
     def test_using_default_value_of_optional_param(self):
-        r = RequestSchema(url={optional('param', 1): Use(int)})
-        assert r.validate_url({}) == {'param': 1}
+        r = RequestSchema(querystring={optional('param', 1): Use(int)})
+        assert r.validate_querystring({}) == {'param': 1}
 
     def test_optional_without_default_value(self):
-        r = RequestSchema(url={optional('param'): Use(int)})
-        assert r.validate_url({}) == {}
+        r = RequestSchema(querystring={optional('param'): Use(int)})
+        assert r.validate_querystring({}) == {}
 
     def test_default_value_is_the_final_value_to_be_used(self):
-        r = RequestSchema(url={optional('param', 'blank'): Use(int)})
-        assert r.validate_url({}) == {'param': 'blank'}
+        r = RequestSchema(querystring={optional('param', 'blank'): Use(int)})
+        assert r.validate_querystring({}) == {'param': 'blank'}
 
 
 class ValidationDecoratorTestCase(TestCase):

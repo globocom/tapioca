@@ -26,8 +26,15 @@ class RequestSchema(object):
     def validate_url(self, value):
         return self.validate('url', value)
 
-    def validate_querystring(self, value):
-        return self.validate('querystring', value)
+    def validate_querystring(self, values):
+        patterns, _, optionals = self.process_definition('querystring')
+        final_values = {}
+        for key, default_value in optionals.items():
+            if default_value != None:
+                final_values[key] = default_value
+        values = Schema(patterns).validate(values)
+        final_values.update(values)
+        return final_values
 
     def validate_body(self, value):
         pattern, _ = self.process_body()
@@ -50,14 +57,8 @@ class RequestSchema(object):
         return descriptions
 
     def validate(self, attr_name, values):
-        patterns, _, optionals = self.process_definition(attr_name)
-        final_values = {}
-        for key, default_value in optionals.items():
-            if default_value != None:
-                final_values[key] = default_value
-        values = Schema(patterns).validate(values)
-        final_values.update(values)
-        return final_values
+        patterns, _, _ = self.process_definition(attr_name)
+        return Schema(patterns).validate(values)
 
     def process_definition(self, attr_name):
         attr = self.get_definition_attr(attr_name)
@@ -114,7 +115,7 @@ class ValidateDecorator(object):
                 self.process_params_in_url(url_params)
                 self.process_params_in_querystring()
                 self.process_body()
-            except SchemaError:
+            except SchemaError as error:
                 raise tornado.web.HTTPError(400)
 
             return func(handler, *args, **url_params)
