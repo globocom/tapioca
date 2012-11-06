@@ -62,10 +62,13 @@ class ParamSchema(object):
                 if self.default_value:
                     return self.default_value
             else:
-                raise SchemaError('required value not passed')
+                raise ParamRequiredError(self.name)
         else:
             value = values[self.name]
-            return Schema(self.pattern).validate(value)
+            try:
+                return Schema(self.pattern).validate(value)
+            except SchemaError:
+                raise InvalidParamError(self.name)
 
 
 class ParamSchemaProcessor(object):
@@ -112,12 +115,23 @@ class InvalidSchemaDefinition(Exception):
     pass
 
 
-class InvalidParamError(Exception):
-    def __init__(self, invalid_param):
+class ParamError(Exception):
+    def __init__(self, param):
         Exception.__init__(self)
-        self.invalid_param = invalid_param
+        self.param = param
+
+
+class ParamRequiredError(ParamError):
+    def __init__(self, param):
+        ParamError.__init__(self, param)
+        self.message = 'The "{}" parameter is required.'.format(self.param)
+
+
+class InvalidParamError(ParamError):
+    def __init__(self, param):
+        ParamError.__init__(self, param)
         self.message = 'The "{}" parameter value is not valid.'.format(
-                invalid_param)
+                self.param)
 
 
 class ValidateDecorator(object):
@@ -143,7 +157,7 @@ class ValidateDecorator(object):
                 self.process_body()
             except SchemaError as error:
                 raise tornado.web.HTTPError(400)
-            except InvalidParamError as error:
+            except ParamError as error:
                 handler.set_status(400)
                 handler.respond_with(self.format_error(error))
                 return

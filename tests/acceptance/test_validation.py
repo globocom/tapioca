@@ -12,6 +12,7 @@ from tapioca import TornadoRESTful, ResourceHandler, validate, optional
 class ProjectsResource(ResourceHandler):
 
     @validate(querystring={
+        'ck': unicode,
         optional('name'): (unicode, 'The name of the project that do you want to search for'),
         optional('size'): (Use(int), 'The maximum number of projects you want')
     })
@@ -28,17 +29,25 @@ class UseOfValidationTestCase(AsyncHTTPTestCase, AsyncHTTPClientMixin):
         return application
 
     def test_should_return_when_called_with_the_correct_values(self):
-        response = self.get('/projects.json?name=test&size=10')
+        response = self.get('/projects.json?ck=1&name=test&size=10')
         assert_response_code(response, 200)
 
     def test_should_return_ok_if_more_params_than_expected(self):
-        response = self.get('/projects.json?name=test&foo=bar&size=234')
+        response = self.get('/projects.json?ck=1&name=test&foo=bar&size=234')
         assert_response_code(response, 200)
 
     def test_should_return_an_descriptive_error(self):
-        response = self.get('/projects.json?name=test&size=foo')
+        response = self.get('/projects.json?ck=1&name=test&size=foo')
         assert_response_code(response, 400)
+        assert loads(response.body)['error'] == \
+            'The "size" parameter value is not valid.'
 
     def test_should_be_able_to_call_without_size(self):
-        response = self.get('/projects.json?name=foobar')
+        response = self.get('/projects.json?ck=1&name=foobar')
         assert_response_code(response, 200)
+
+    def test_should_throw_error_when_required_param_is_not_passed(self):
+        response = self.get('/projects.json')
+        assert_response_code(response, 400)
+        assert loads(response.body)['error'] == \
+            'The "ck" parameter is required.'
