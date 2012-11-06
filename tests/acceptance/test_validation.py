@@ -41,5 +41,4 @@ class UseOfValidationTestCase(AsyncHTTPTestCase, AsyncHTTPClientMixin):
 
     def test_should_be_able_to_call_without_size(self):
         response = self.get('/projects.json?name=foobar')
-        print response.body
         assert_response_code(response, 200)
