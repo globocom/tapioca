@@ -59,7 +59,7 @@ class ParamSchema(object):
     def validate(self, values):
         if not self.name in values:
             if self.is_optional:
-                if self.default_value:
+                if not self.default_value == None:
                     return self.default_value
             else:
                 raise ParamRequiredError(self.name)
@@ -98,7 +98,7 @@ class ParamSchemaProcessor(object):
         final_values = {}
         for param in self.params:
             result = param.validate(real_values)
-            if result:
+            if result != None:
                 final_values[param.name] = result
         return final_values
 

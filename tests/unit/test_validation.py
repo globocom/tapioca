@@ -96,6 +96,10 @@ class RequestSchemaTestCase(TestCase):
         r = RequestSchema(querystring={optional('param', 1): Use(int)})
         assert r.validate_querystring({}) == {'param': 1}
 
+    def test_using_default_value_that_is_falsely_evaluated(self):
+        r = RequestSchema(querystring={optional('param', 0): Use(int)})
+        assert r.validate_querystring({}) == {'param': 0}
+
     def test_optional_without_default_value(self):
         r = RequestSchema(querystring={optional('param'): Use(int)})
         assert r.validate_querystring({}) == {}
