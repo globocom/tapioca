@@ -140,9 +140,8 @@ class ResourceHandler(tornado.web.RequestHandler):
         def _callback(content=None, *args, **kwargs):
             self.set_status(201)
             self.set_cross_origin()
-            self.set_header(
-                'Location', '{r.protocol}://{r.host}{r.path}/{id:d}'.format(
-                    r=self.request, id=content['id']))
+            if content:
+                self.respond_with(content)
             self.finish()
 
         self.create_model(_callback, *args, **kwargs)
@@ -153,8 +152,6 @@ class ResourceHandler(tornado.web.RequestHandler):
         try:
             self.set_status(204)
             self.set_cross_origin()
-            self.set_header('Location', '{r.protocol}://{r.host}{r.path}'
-                    .format(r=self.request))
             self.update_model(key, self.finish_callback, *args, **kwargs)
         except ResourceDoesNotExist:
             raise tornado.web.HTTPError(404)

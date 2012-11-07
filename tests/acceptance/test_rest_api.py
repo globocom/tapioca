@@ -59,6 +59,9 @@ class ImplementAllRequiredMethodsInApiHandler:
         model['id'] = max([int(x['id']) for x in FAKE_DATABASE]) + 1
         FAKE_DATABASE.append(model)
         logging.debug('created {0!s}'.format(model))
+        self.set_header('Location',
+                '{r.protocol}://{r.host}{r.path}/{id:d}'.format(
+                        r=self.request, id=model['id']))
         callback(model)
 
     def get_collection(self, callback):
@@ -72,6 +75,9 @@ class ImplementAllRequiredMethodsInApiHandler:
         model['id'] = int(cid)
         logging.debug('updating {0!s} {1!s}'.format(str(cid), str(model)))
         FAKE_DATABASE[FAKE_DATABASE.index(self._find(int(cid)))] = model
+        url_to_instance = '{r.protocol}://{r.host}{r.path}'.format(
+                        r=self.request)
+        self.set_header('Location', url_to_instance)
         callback()
 
     def delete_model(self, cid, callback):
@@ -134,7 +140,6 @@ class BaseApiHandlerTestCase(AsyncHTTPTestCase, AsyncHTTPClientMixin):
         }
         response = self.post(self.get_url('/api'), dumps(a_new_item))
         assert_response_code(response, 201)
-        assert 'Location' in response.headers
 
     def test_put_to_update_an_existing_resource(self):
         response = self.get('/api/1')
