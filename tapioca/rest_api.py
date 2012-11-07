@@ -137,9 +137,11 @@ class ResourceHandler(tornado.web.RequestHandler):
     @tornado.web.asynchronous
     def post(self, *args, **kwargs):
         """ create a model """
-        def _callback(content=None, *args, **kwargs):
+        def _callback(content=None, location=None, *args, **kwargs):
             self.set_status(201)
             self.set_cross_origin()
+            if location:
+                self.set_header('Location', location)
             if content:
                 self.respond_with(content)
             self.finish()
@@ -151,7 +153,6 @@ class ResourceHandler(tornado.web.RequestHandler):
         """ update a model """
         try:
             self.set_status(204)
-            self.set_cross_origin()
             self.update_model(key, self.finish_callback, *args, **kwargs)
         except ResourceDoesNotExist:
             raise tornado.web.HTTPError(404)
@@ -160,12 +161,15 @@ class ResourceHandler(tornado.web.RequestHandler):
     def delete(self, key=None, *args):
         """ delete a model """
         try:
+            self.set_status(200)
             self.delete_model(key, self.finish_callback, *args)
-            self.set_cross_origin()
         except ResourceDoesNotExist:
             raise tornado.web.HTTPError(404)
 
-    def finish_callback(self, *args, **kw):
+    def finish_callback(self, location=None, *args, **kw):
+        self.set_cross_origin()
+        if location:
+            self.set_header('Location', location)
         self.finish()
 
     # Extension points

@@ -59,10 +59,9 @@ class ImplementAllRequiredMethodsInApiHandler:
         model['id'] = max([int(x['id']) for x in FAKE_DATABASE]) + 1
         FAKE_DATABASE.append(model)
         logging.debug('created {0!s}'.format(model))
-        self.set_header('Location',
-                '{r.protocol}://{r.host}{r.path}/{id:d}'.format(
-                        r=self.request, id=model['id']))
-        callback(model)
+        url_to_instance = '{r.protocol}://{r.host}{r.path}/{id:d}'.format(
+                        r=self.request, id=model['id'])
+        callback(model, url_to_instance)
 
     def get_collection(self, callback):
         callback(FAKE_DATABASE)
@@ -77,8 +76,7 @@ class ImplementAllRequiredMethodsInApiHandler:
         FAKE_DATABASE[FAKE_DATABASE.index(self._find(int(cid)))] = model
         url_to_instance = '{r.protocol}://{r.host}{r.path}'.format(
                         r=self.request)
-        self.set_header('Location', url_to_instance)
-        callback()
+        callback(url_to_instance)
 
     def delete_model(self, cid, callback):
         logging.debug('deleting')
