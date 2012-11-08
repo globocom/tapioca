@@ -138,6 +138,8 @@ class BaseApiHandlerTestCase(AsyncHTTPTestCase, AsyncHTTPClientMixin):
         }
         response = self.post(self.get_url('/api'), dumps(a_new_item))
         assert_response_code(response, 201)
+        self.assertRegexpMatches(response.headers['Location'], r'http://localhost:\d+/api/\d+')
+        assert loads(response.body)['text'] == 'this is my new item'
 
     def test_put_to_update_an_existing_resource(self):
         response = self.get('/api/1')

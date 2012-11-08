@@ -144,7 +144,8 @@ class ResourceHandler(tornado.web.RequestHandler):
                 self.set_header('Location', location)
             if content:
                 self.respond_with(content)
-            self.finish()
+            else:
+                self.finish()
 
         self.create_model(_callback, *args, **kwargs)
 
