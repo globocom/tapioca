@@ -51,3 +51,29 @@ class UseOfValidationTestCase(AsyncHTTPTestCase, AsyncHTTPClientMixin):
         assert_response_code(response, 400)
         assert loads(response.body)['error'] == \
             'The "ck" parameter is required.'
+
+
+class NoAccessValuesInQuerystring(ResourceHandler):
+
+    @validate(querystring={
+        'it_is_int_value': (Use(int), 'The maximum number of projects you want')
+    })
+    def get_collection(self, callback):
+        callback(['its always valid'])
+
+
+class NoAccessDefinedValuesTestCase(AsyncHTTPTestCase, AsyncHTTPClientMixin):
+
+    def get_app(self):
+        api = TornadoRESTful()
+        api.add_resource('always_valid', NoAccessValuesInQuerystring)
+        application = tornado.web.Application(api.get_url_mapping())
+        return application
+
+    def test_should_be_a_valid_using_int(self):
+        response = self.get('/always_valid.json?size=1')
+        assert_response_code(response, 200)
+
+    def test_should_be_a_valid_request_anyway(self):
+        response = self.get('/always_valid.json?size=abc')
+        assert_response_code(response, 200)

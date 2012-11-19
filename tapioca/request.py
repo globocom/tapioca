@@ -149,12 +149,13 @@ class ValidateDecorator(object):
         @functools.wraps(func)
         def wrapper(handler, *args, **url_params):
             self.handler = handler
-            self.handler.values = {}
+            self.handler.values = Values(self.request_schema,
+                    self.get_querystring_values())
 
             try:
                 self.process_params_in_url(url_params)
-                self.process_params_in_querystring()
                 self.process_body()
+                return func(handler, *args, **url_params)
             except SchemaError as error:
                 raise tornado.web.HTTPError(400)
             except ParamError as error:
@@ -162,7 +163,6 @@ class ValidateDecorator(object):
                 handler.respond_with(self.format_error(error))
                 return
 
-            return func(handler, *args, **url_params)
         return wrapper
 
     def process_params_in_url(self, url_params):
@@ -170,16 +170,14 @@ class ValidateDecorator(object):
             parsed_values = self.request_schema.validate_url(url_params)
             self.handler.values['url'] = parsed_values
 
-    def process_params_in_querystring(self):
+    def get_querystring_values(self):
+        values = {}
         if hasattr(self.request_schema, 'querystring'):
-            request_values = {}
             for param in self.request_schema.querystring_params():
                 value = self.handler.get_argument(param.name, default=None)
                 if value != None:
-                    request_values[param.name] = value
-            parsed_values = self.request_schema.validate_querystring(
-                    request_values)
-            self.handler.values['querystring'] = parsed_values
+                    values[param.name] = value
+        return values
 
     def process_body(self):
         if hasattr(self.request_schema, 'body'):
@@ -189,6 +187,22 @@ class ValidateDecorator(object):
 
     def format_error(self, error):
         return {'error': error.message}
+
+
+class Values(dict):
+    def __init__(self, request_schema, querystring):
+        self.request_schema = request_schema
+        self.querystring_values = querystring
+
+    def querystring(self):
+        return self.request_schema.validate_querystring(
+                self.querystring_values)
+
+    def __getitem__(self, name):
+        if name == 'querystring':
+            return self.querystring()
+        else:
+            return super(Values, self).__getitem__(name)
 
 
 class OptionalParameter(Optional):
