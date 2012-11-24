@@ -1,11 +1,9 @@
-Tapioca [![build status](https://secure.travis-ci.org/globocom/tapioca.png)](http://travis-ci.org/globocom/tapioca)
-=======
+# Tapioca [![build status](https://secure.travis-ci.org/globocom/tapioca.png)](http://travis-ci.org/globocom/tapioca)
 
 Tapioca is a small and flexible micro-framework on top of Tornado.
 It provides a simpler way to create RESTful API's.
 
-Why Tapioca?
------------
+## Why Tapioca?
 
 Create APIs using Tornado is easy, but Tapioca makes it even easier.
 Tapioca provides common behaviour to manage resources as close as possible
@@ -21,8 +19,7 @@ Doesn't matter if they are a machine or a human being.
 Tapioca gives you an automatic console interface to your API. This way it can be used
 as both the documentation and testing interface by your API clients.
 
-Usage
------
+## Usage
 
 Here is a "Hello, world!" example API written using Tapioca:
 
@@ -50,6 +47,10 @@ if __name__ == "__main__":
 
 ```
 
+This is the simplest usege of Tapioca. That provide the very basic features which is available to you.
+
+### Handing content types
+
 With the code above you running you can access the hello route of your
 application.
 
@@ -69,9 +70,35 @@ $ curl -XGET -v http://127.0.0.1:8888/hello.html
 
 Those are the default content types which Tapioca gives you.
 
+### Parameters
 
-Extending
----------
+All API's need to define parameters which users can query data or send 
+other informations to the server. Tapioca provides a simple way to define 
+and validate the data sent by your users. Those definitions will also be used later to
+introspect your API. The definition of which parameters do you expect in a specific route 
+should be defined as follow:
+
+```python
+...
+
+from tapioca import validate
+
+class HelloResource(ResourceHandler):
+
+    @validate(querystring={'name': unicode})
+    def get_collection(self, callback):
+        name = self.values.querystring['name']
+        callback("Hello, {}!".format(name))
+
+...
+```
+
+As you can see in the code above, it's clear that the route expect to receive a parameter
+'name' which is a ```unicode``` value. It expect an unicode value because all parameters sent 
+to Tornado in a query string is a unicode value.
+
+
+### Extending
 
 You can easily make your API speak a new "language". 
 
@@ -121,8 +148,7 @@ Now you can access your route and see it working:
     $ curl -X GET http://localhost:8000/comments.yaml
 
 
-Contributing
-------------
+## Contributing
 
 To contribute with the Tapioca you can just [fork the project](https://github.com/globocom/tapioca/fork_select), 
 implement all the changes you need and then send us a pull request. 
@@ -131,8 +157,7 @@ pull request, in order to give us the possibility to review them separately (com
 We are open to suggestions and to discuss all your ideas.
 
 
-License
--------
+## License
 
 Tapioca is licensed under the MIT License:
 
