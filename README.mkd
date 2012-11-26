@@ -97,6 +97,66 @@ As you can see in the code above, it's clear that the route expect to receive a 
 'name' which is a ```unicode``` value. It expect an unicode value because all parameters sent 
 to Tornado in a query string is a unicode value.
 
+For parameter definition and validation Tapioca uses [Schema](https://github.com/halst/schema) 
+a pythonic library to define what values are accepted by your API. An example of an interger parameter
+would be ```{ 'parameter_name': Use(int) }``` this way the value of ```parameter_name``` will be converted
+in an integer value. If it fails, an error will be raised and your API will return an error response.
+You can also need that some parameters to be optional or maybe have default value when the parameter is not sent by
+the users. Tapioca provide to you a way to declare it using the ```optional``` function as follow:
+
+```python
+...
+
+from schema import Use
+from tapioca import validate, optional
+
+class HelloResource(ResourceHandler):
+
+    @validate(querystring={
+        'name': unicode,
+        optional('page', default_value=1): Use(int)
+    })
+    def get_collection(self, callback):
+        name = self.values.querystring['name']
+        page = self.values.querystring['page']
+        callback("Hello, {}! It's page {!s}.".format(name, page))
+
+...
+```
+
+The example above shows how to define a parameter named ```page``` with the default value ```1``` if
+it is not present in the query string of the user request. If it's present the value will be used to 
+call the function ```int``` as declared in the definition. We used the ```int``` built-in function, but 
+you can use any callable object. We recommend you to read the [Schema documentation](https://github.com/halst/schema#how-schema-validates-data) for details.
+
+To be make the code more readable Tapioca accepts as parameter in the ```validate``` decorator an
+class that defines the attribute ```querystring``` as you can see below. The only requirement is that
+class should inherits from ```RequestSchema```.
+
+```python
+...
+
+from schema import Use
+from tapioca import validate, optional, RequestSchema
+
+class SayHelloRequest(RequestSchema):
+    querystring = {
+        'name': unicode,
+        optional('page', 1): Use(int)
+    }
+
+class HelloResource(ResourceHandler):
+
+    @validate(SayHelloRequest)
+    def get_collection(self, callback):
+        name = self.values.querystring['name']
+        page = self.values.querystring['page']
+        callback("Hello, {}! It's page {!s}.".format(name, page))
+
+...
+```
+
+
 
 ### Extending
 
